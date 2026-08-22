@@ -192,7 +192,7 @@ function App() {
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
         <div className="flow" aria-label="Dado leva a contexto, explicação, investigação e próxima pergunta">
-          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item ${index === 1 ? 'highlighted ' : ''}${activeFlowStep === index ? 'active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
+          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item ${activeFlowStep === index ? 'active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
         <article className="flow-explainer" aria-live="polite">
           <span>Etapa {activeFlowStep + 1} · {flowSteps[activeFlowStep].title}</span>
