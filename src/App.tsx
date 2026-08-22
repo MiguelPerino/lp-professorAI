@@ -33,6 +33,39 @@ const responses: Record<string, string> = {
     'Comece comparando a dívida líquida com a geração de caixa e o EBITDA. Mais importante que olhar um número isolado é entender o prazo da dívida, os juros e a capacidade da empresa de pagá-la ao longo do tempo.',
 }
 
+const flowSteps = [
+  {
+    title: 'Dado',
+    summary: 'Você encontra um número ou acontecimento.',
+    explanationTitle: 'Comece pelo que chamou a sua atenção.',
+    explanation: 'Pode ser uma queda na ação, um lucro que mudou, uma margem menor ou um indicador fora do padrão. O dado é o ponto de partida — não uma conclusão isolada.',
+  },
+  {
+    title: 'Contexto',
+    summary: 'O que mudou no ativo, setor ou mercado?',
+    explanationTitle: 'Todo dado precisa de uma história ao redor.',
+    explanation: 'O Professor ajuda a conectar o número ao momento da empresa, às expectativas do mercado, ao setor e aos acontecimentos que podem explicar a variação.',
+  },
+  {
+    title: 'Explicação',
+    summary: 'O Professor traduz o que isso pode significar.',
+    explanationTitle: 'Entenda o significado antes de tirar conclusões.',
+    explanation: 'Em linguagem simples, você descobre o que o indicador mede, por que ele importa e quais interpretações fazem sentido naquele contexto.',
+  },
+  {
+    title: 'Investigação',
+    summary: 'Ele mostra o que comparar e observar.',
+    explanationTitle: 'A resposta abre caminhos para investigar melhor.',
+    explanation: 'O Professor sugere comparações, períodos e perguntas complementares para que você não dependa de um único número ao analisar uma empresa.',
+  },
+  {
+    title: 'Próxima pergunta',
+    summary: 'Você aprofunda com mais clareza.',
+    explanationTitle: 'Uma boa análise leva à próxima dúvida.',
+    explanation: 'Com mais contexto, você formula perguntas mais específicas e continua aprendendo sobre o ativo de forma progressiva.',
+  },
+]
+
 function Logo() {
   return (
     <a className="brand" href="#inicio" aria-label="AçõesJá, início">
@@ -89,6 +122,7 @@ function App() {
   const [modal, setModal] = useState<ModalKind>(null)
   const [query, setQuery] = useState('')
   const [activeQuestion, setActiveQuestion] = useState(questions[0])
+  const [activeFlowStep, setActiveFlowStep] = useState(0)
   const [answered, setAnswered] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -158,14 +192,13 @@ function App() {
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
         <div className="flow" aria-label="Dado leva a contexto, explicação, investigação e próxima pergunta">
-          {[
-            ['Dado', 'Você encontra um número ou acontecimento.'],
-            ['Contexto', 'O que mudou no ativo, setor ou mercado?'],
-            ['Explicação', 'O Professor traduz o que isso pode significar.'],
-            ['Investigação', 'Ele mostra o que comparar e observar.'],
-            ['Próxima pergunta', 'Você aprofunda com mais clareza.'],
-          ].map(([item, description], index) => <div key={item} className={index === 1 ? 'flow-item highlighted' : 'flow-item'}><span>0{index + 1}</span><strong>{item}</strong><p>{description}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</div>)}
+          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item ${index === 1 ? 'highlighted ' : ''}${activeFlowStep === index ? 'active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
+        <article className="flow-explainer" aria-live="polite">
+          <span>Etapa {activeFlowStep + 1} · {flowSteps[activeFlowStep].title}</span>
+          <h3>{flowSteps[activeFlowStep].explanationTitle}</h3>
+          <p>{flowSteps[activeFlowStep].explanation}</p>
+        </article>
       </section>
 
       <section className="demo-section" id="demonstracao">
