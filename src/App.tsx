@@ -19,18 +19,21 @@ import brandIcon from '../design/Logo Ícone preto.png'
 type ModalKind = 'auth' | 'checkout' | 'terms' | 'privacy' | null
 
 const questions = [
-  'Como uma empresa pode dar lucro e a ação cair mesmo assim?',
-  'P/L alto é sempre ruim?',
-  'O que está por trás da dívida de uma empresa?',
+  'A empresa teve lucro. Então por que a ação caiu?',
+  'P/L alto significa que uma ação está cara?',
+  'Como eu sei se a dívida dessa empresa é preocupante?',
+  'O resultado foi bom. O que eu deveria analisar agora?',
 ]
 
 const responses: Record<string, string> = {
   [questions[0]]:
-    'Porque o mercado olha para o futuro, não apenas para o resultado atual. Se o lucro veio abaixo do esperado, houve pressão de custos ou as projeções para os próximos trimestres pioraram, a ação pode cair mesmo com um bom número no presente.',
+    'Porque o mercado olha para o futuro, não só para o resultado atual. Se o lucro veio abaixo do esperado, houve pressão de custos ou as projeções pioraram, a ação pode cair mesmo depois de um bom número no presente.',
   [questions[1]]:
-    'Um P/L alto indica que o mercado está pagando mais por cada real de lucro da empresa. Isso pode refletir expectativa de crescimento — mas também pede que você investigue se esse crescimento parece sustentável.',
+    'Não necessariamente. Um P/L alto mostra que o mercado paga mais por cada real de lucro. Isso pode refletir crescimento esperado — e pede que você investigue se esse crescimento parece sustentável.',
   [questions[2]]:
-    'Comece comparando a dívida líquida com a geração de caixa e o EBITDA. Mais importante que olhar um número isolado é entender o prazo da dívida, os juros e a capacidade da empresa de pagá-la ao longo do tempo.',
+    'Comece comparando a dívida líquida com a geração de caixa e o EBITDA. Depois, olhe prazos, juros e a capacidade de pagamento: o contexto importa mais que um número isolado.',
+  [questions[3]]:
+    'Compare o resultado com as expectativas, os períodos anteriores e empresas do mesmo setor. Depois, investigue se o crescimento veio de uma operação mais forte ou de um evento pontual.',
 }
 
 const flowSteps = [
@@ -151,54 +154,54 @@ function App() {
 
       <section className="hero container">
         <div className="hero-copy">
-          <div className="product-label"><span className="pulse-dot" /> AçõesJá apresenta</div>
-          <p className="hero-product">Professor IA <span>• guia educacional de análise</span></p>
-          <h1>Entenda o contexto por trás dos seus <em>investimentos.</em></h1>
-          <p>Pergunte sobre ações, indicadores e acontecimentos do mercado. O Professor transforma dados difíceis em explicações simples — e em perguntas melhores.</p>
+          <div className="product-label"><span className="pulse-dot" /> Professor IA do AçõesJá</div>
+          <p className="hero-product">Guia educacional de análise</p>
+          <h1>Entenda ações, indicadores e acontecimentos do mercado com o <em>Professor IA.</em></h1>
+          <p>Transforme dados difíceis em explicações simples. O Professor mostra o contexto por trás das informações e ajuda você a entender o que investigar em seguida.</p>
+          <div className="hero-actions">
+            <button className="button button-primary" onClick={() => setModal('auth')}>Testar o Professor IA <ArrowDownRight size={18} /></button>
+            <a className="text-link" href="#como-funciona">Ver como funciona <ChevronRight size={16} /></a>
+          </div>
           <div className="trust"><ShieldCheck size={18} /><span>Uma experiência educacional. Sem recomendações de compra ou venda.</span></div>
         </div>
         <div className="hero-visual" aria-label="Prévia da conversa com o Professor IA">
-          <div className="visual-context">Dados do ativo <strong>+ contexto</strong></div>
-          <div className="market-card"><span>IBOV · último pregão</span><strong>132.450 <b>+1,12%</b></strong><svg viewBox="0 0 300 68" preserveAspectRatio="none"><path d="M0 59 C18 53 20 60 33 50 S50 51 62 42 S78 50 88 31 S101 45 119 32 S136 40 152 24 S176 44 190 29 S209 35 226 15 S240 30 253 21 S273 26 300 7" /></svg></div>
+          <div className="visual-context">Uma prévia do produto <strong>· AçõesJá</strong></div>
+          <div className="market-card"><span>CONTEXTO DO ATIVO</span><strong>Resultado trimestral <b>+12,4%</b></strong><small>Lucro, expectativa e reação do mercado</small></div>
           <article className="floating-chat">
-            <div className="chat-top"><ProfessorAvatar /><div><strong>Professor IA</strong><small><i /> disponível para investigar</small></div><span className="more">•••</span></div>
-            <div className="bubble user-mini">Por que a ação caiu mesmo com lucro?</div>
-            <div className="bubble professor-mini">O lucro é só uma parte da história. Vamos olhar o que o mercado esperava?</div>
-            <button onClick={() => document.getElementById('demonstracao')?.scrollIntoView({ behavior: 'smooth' })}>Ver explicação <ChevronRight size={15} /></button>
+            <div className="chat-top"><ProfessorAvatar /><div><strong>Professor IA</strong><small><i /> guia educacional de análise</small></div><span className="demo-badge">AçõesJá</span></div>
+            <div className="bubble user-mini">{activeQuestion}</div>
+            <div className="bubble professor-mini">O dado é o começo. Vamos comparar o resultado com o que o mercado esperava e investigar o que mudou?</div>
+            <button onClick={() => document.getElementById('demonstracao')?.scrollIntoView({ behavior: 'smooth' })}>Ver uma resposta completa <ChevronRight size={15} /></button>
           </article>
-          <div className="metric-card"><span>AçõesJá · Professor IA</span><strong>Entenda antes de decidir</strong></div>
-        </div>
-        <div className="hero-actions">
-          <a className="button button-primary" href="#perguntar">Testar o Professor IA <ArrowDownRight size={18} /></a>
-          <a className="text-link" href="#demonstracao">Ver demonstração <span>↗</span></a>
-        </div>
-      </section>
-
-      <section className="question-strip" aria-labelledby="question-title">
-        <div className="container">
-          <p id="question-title"><Sparkles size={16} /> Comece por uma pergunta</p>
-          <div className="question-pills">
-            {questions.map((question) => <button key={question} onClick={() => selectQuestion(question)}>{question}<ArrowRight size={15} /></button>)}
-          </div>
+          <div className="metric-card"><span>Próxima pergunta</span><strong>O que vale comparar agora?</strong></div>
         </div>
       </section>
 
       <section className="context-section container" id="como-funciona">
-        <div><span className="eyebrow">Como o Professor funciona</span><h2>Um dado é só o começo da investigação.</h2></div>
-        <p>O Professor conecta o que você vê nos números ao contexto do ativo, explica o que importa e aponta a próxima pergunta que vale explorar.</p>
+        <div><span className="eyebrow">Como o Professor ajuda</span><h2>Mais do que uma resposta. Contexto para você entender melhor.</h2></div>
+        <p>Entenda o que um dado significa, como ele se relaciona com a situação analisada e o que vale investigar depois.</p>
         <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJá">
           <div><span>O ecossistema</span><strong>AçõesJá</strong></div>
           <ArrowDownRight size={18} />
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
         <div className="flow" aria-label="Dado leva a contexto, explicação, investigação e próxima pergunta">
-          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item ${activeFlowStep === index ? 'active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
+          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item ${index === 1 ? 'highlighted ' : ''}${activeFlowStep === index ? 'active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
         <article className="flow-explainer" aria-live="polite">
           <span>Etapa {activeFlowStep + 1} · {flowSteps[activeFlowStep].title}</span>
           <h3>{flowSteps[activeFlowStep].explanationTitle}</h3>
           <p>{flowSteps[activeFlowStep].explanation}</p>
         </article>
+      </section>
+
+      <section className="question-strip" aria-labelledby="question-title">
+        <div className="container">
+          <p id="question-title"><Sparkles size={16} /> Perguntas que abrem a análise</p>
+          <div className="question-pills">
+            {questions.map((question) => <button key={question} onClick={() => selectQuestion(question)}>{question}<ArrowRight size={15} /></button>)}
+          </div>
+        </div>
       </section>
 
       <section className="demo-section" id="demonstracao">
