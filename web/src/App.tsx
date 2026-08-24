@@ -13,8 +13,10 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
-import brandLogo from '../design/Logo preta.jpeg'
-import brandIcon from '../design/Logo Ícone preto.png'
+import brandLogo from '../../design/Logo preta.jpeg'
+import brandIcon from '../../design/Logo Ícone preto.png'
+import { track } from './lib/analytics'
+import { askProfessor, joinWaitlist, requestMagicLink, startGoogleLogin } from './lib/services'
 
 type ModalKind = 'auth' | 'checkout' | 'terms' | 'privacy' | null
 
@@ -83,12 +85,49 @@ function ProfessorAvatar({ small = false }: { small?: boolean }) {
 
 function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () => void }) {
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
+  const [name, setName] = useState('')
+  const [whatsapp, setWhatsapp] = useState('')
+  const [marketingConsent, setMarketingConsent] = useState(false)
   const details = useMemo(() => {
     if (kind === 'terms') return { eyebrow: 'AçõesJá', title: 'Termos de Uso', text: 'O texto oficial dos Termos de Uso será inserido aqui antes da publicação. Neste protótipo, este modal valida apenas a experiência de leitura sem abrir uma nova página.' }
     if (kind === 'privacy') return { eyebrow: 'AçõesJá', title: 'Política de Privacidade', text: 'O texto oficial da Política de Privacidade será inserido aqui antes da publicação. Neste protótipo, nenhum dado enviado é armazenado.' }
     if (kind === 'auth') return { eyebrow: 'Professor IA', title: 'Continue para fazer sua pergunta', text: 'O Professor usa sua identificação para liberar a experiência e aplicar um limite individual de interações.' }
     return { eyebrow: 'Professor IA', title: 'O lançamento ainda não está aberto.', text: 'Entre na lista para receber uma condição especial quando o Professor estiver disponível.' }
   }, [kind])
+
+  const message = (reason: unknown) => reason && typeof reason === 'object' && 'message' in reason
+    ? String(reason.message)
+    : 'Não foi possível concluir agora. Tente novamente.'
+
+  const submitAuth = async () => {
+    if (!email.trim()) return setError('Informe seu e-mail para continuar.')
+    setLoading(true); setError('')
+    try {
+      await requestMagicLink(email.trim())
+      track('auth_magic_link_requested')
+      setSubmitted(true)
+    } catch (reason) { setError(message(reason)) } finally { setLoading(false) }
+  }
+
+  const submitWaitlist = async () => {
+    if (!email.trim()) return setError('Informe seu melhor e-mail.')
+    setLoading(true); setError('')
+    try {
+      await joinWaitlist({ name, email, whatsapp, marketingConsent })
+      track('launch_list_joined', { marketing_consent: marketingConsent })
+      setSubmitted(true)
+    } catch (reason) { setError(message(reason)) } finally { setLoading(false) }
+  }
+
+  const googleLogin = () => {
+    try {
+      track('auth_google_started')
+      startGoogleLogin()
+    } catch (reason) { setError(message(reason)) }
+  }
 
   return (
     <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
@@ -98,24 +137,25 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
         <h2 id="modal-title">{details.title}</h2>
         <p>{details.text}</p>
         {kind === 'auth' && !submitted && <>
-          <button className="google-button" onClick={() => setSubmitted(true)}><span>G</span> Continuar com Google</button>
+          <button className="google-button" onClick={googleLogin}><span>G</span> Continuar com Google</button>
           <div className="or"><i />ou<i /></div>
           <label className="field-label" htmlFor="auth-email">Seu e-mail</label>
-          <input id="auth-email" type="email" placeholder="voce@exemplo.com" />
-          <button className="button button-dark wide" onClick={() => setSubmitted(true)}>Continuar com e-mail <ArrowRight size={17} /></button>
+          <input id="auth-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@exemplo.com" />
+          <button className="button button-dark wide" disabled={loading} onClick={submitAuth}>{loading ? 'Enviando...' : 'Continuar com e-mail'} <ArrowRight size={17} /></button>
           <small>Sem senha. Você receberia um link seguro para continuar.</small>
         </>}
         {kind === 'checkout' && !submitted && <>
           <label className="field-label" htmlFor="lead-name">Como podemos chamar você? <span>opcional</span></label>
-          <input id="lead-name" type="text" placeholder="Seu nome" />
+          <input id="lead-name" type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome" />
           <label className="field-label" htmlFor="lead-email">Seu melhor e-mail</label>
-          <input id="lead-email" type="email" placeholder="voce@exemplo.com" />
+          <input id="lead-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="voce@exemplo.com" />
           <label className="field-label optional" htmlFor="lead-whatsapp">WhatsApp <span>opcional</span></label>
-          <input id="lead-whatsapp" type="tel" placeholder="(11) 99999-9999" />
-          <label className="consent"><input type="checkbox" /> <span>Quero receber novidades do lançamento por e-mail.</span></label>
-          <button className="button button-dark wide" onClick={() => setSubmitted(true)}>Quero receber a condição <ArrowRight size={17} /></button>
+          <input id="lead-whatsapp" type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="(11) 99999-9999" />
+          <label className="consent"><input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} /> <span>Quero receber novidades do lançamento por e-mail.</span></label>
+          <button className="button button-dark wide" disabled={loading} onClick={submitWaitlist}>{loading ? 'Enviando...' : 'Quero receber a condição'} <ArrowRight size={17} /></button>
         </>}
-        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>Você está na lista.</h3><p>Este é um fluxo visual do protótipo. Em produção, o cadastro será persistido antes da confirmação.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
+        {error && <p className="form-error" role="alert">{error}</p>}
+        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>{kind === 'auth' ? 'Verifique seu e-mail.' : 'Você está na lista.'}</h3><p>{kind === 'auth' ? 'Enviamos um link seguro para você continuar. Depois de entrar, sua pergunta estará esperando por você.' : 'Seu cadastro foi salvo. Avisaremos você quando houver uma condição de lançamento.'}</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
       </section>
     </div>
   )
@@ -128,6 +168,9 @@ function App() {
   const [activeFlowStep, setActiveFlowStep] = useState(0)
   const [answered, setAnswered] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [liveAnswer, setLiveAnswer] = useState('')
+  const [questionError, setQuestionError] = useState('')
+  const [asking, setAsking] = useState(false)
 
   const selectQuestion = (question: string) => {
     setActiveQuestion(question)
@@ -135,8 +178,31 @@ function App() {
     document.getElementById('demonstracao')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
-  const startQuestion = () => {
-    if (query.trim()) setModal('auth')
+  const startQuestion = async () => {
+    const question = query.trim()
+    if (!question) return
+    setAsking(true)
+    setQuestionError('')
+    setLiveAnswer('')
+    track('professor_question_started', { question_length: question.length })
+    try {
+      const response = await askProfessor(question)
+      setLiveAnswer(response.answer)
+      setAnswered(true)
+      track('professor_question_answered', { conversation_id: response.conversationId })
+    } catch (reason) {
+      const message = reason && typeof reason === 'object' && 'message' in reason
+        ? String(reason.message)
+        : 'Não foi possível enviar sua pergunta.'
+      if (message.includes('Faça login')) {
+        setModal('auth')
+      } else {
+        setQuestionError(message)
+        track('professor_question_failed', { reason: message })
+      }
+    } finally {
+      setAsking(false)
+    }
   }
 
   return (
@@ -226,8 +292,10 @@ function App() {
           <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> login na próxima etapa</small></div>
           <label className="sr-only" htmlFor="question">Sua pergunta</label>
           <textarea id="question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: O que devo olhar antes de analisar uma empresa?" maxLength={280} />
-          <div className="question-box-bottom"><small>{query.length}/280</small><button className="button button-dark" onClick={startQuestion}>Continuar <ArrowRight size={17} /></button></div>
+          <div className="question-box-bottom"><small>{query.length}/280</small><button className="button button-dark" disabled={asking} onClick={startQuestion}>{asking ? 'Perguntando...' : 'Continuar'} <ArrowRight size={17} /></button></div>
           {answered && <p className="preview-note"><CircleHelp size={16} /> Você viu uma demonstração acima. Para fazer uma pergunta livre, continue com seu e-mail.</p>}
+          {questionError && <p className="form-error question-error" role="alert">{questionError}</p>}
+          {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
         </div>
       </section>
 

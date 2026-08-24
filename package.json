@@ -1,23 +1,12 @@
 {
-  "name": "acoesja-professor-prototype",
+  "name": "acoesja-professor-ia",
   "private": true,
   "version": "0.1.0",
-  "type": "module",
+  "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@vitejs/plugin-react": "latest",
-    "vite": "latest",
-    "typescript": "latest",
-    "react": "latest",
-    "react-dom": "latest",
-    "lucide-react": "latest"
-  },
-  "devDependencies": {
-    "@types/react": "latest",
-    "@types/react-dom": "latest"
+    "dev": "corepack pnpm --parallel --filter @acoesja/web --filter @acoesja/server dev",
+    "dev:web": "corepack pnpm --filter @acoesja/web dev",
+    "dev:server": "corepack pnpm --filter @acoesja/server dev",
+    "build": "corepack pnpm --filter @acoesja/web build && corepack pnpm --filter @acoesja/server build"
   }
 }

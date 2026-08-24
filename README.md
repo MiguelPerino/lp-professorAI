@@ -1,42 +1,64 @@
-# Protótipo — Professor IA | AçõesJá
+# AçõesJá — Professor IA
 
-Landing page de validação em React + TypeScript, construída a partir dos três documentos de produto recebidos.
+O repositório está organizado por responsabilidade:
 
-## Escopo deste protótipo
+```text
+web/       landing page React/Vite e integrações públicas do navegador
+server/    BFF do Professor IA; concentra segredos, limite e persistência
+supabase/  schema, RLS e funções SQL da base
+design/    ativos visuais e referências de marca
+```
 
-- Landing page responsiva, com a marca AçõesJá e o Professor IA como experiência principal.
-- Demonstração simulada por perguntas prontas, sem consumo de limite ou chamada a LLM.
-- Campo para pergunta livre que abre um fluxo visual de autenticação.
-- Modal de lista de lançamento (checkout simulado), Termos e Política de Privacidade.
-- Nenhuma integração, dado ou lead real é enviado neste estágio.
+## Primeiro setup
 
-## Pontos pendentes antes de produção
+Requer Node.js 20 ou superior e pnpm 9. Depois:
 
-- Criar o projeto Supabase dedicado e configurar Auth, RLS e persistência.
-- Integrar o contrato existente do Professor por um BFF Node.js, sem expor segredos.
-- Configurar PostHog, eventos, UTMs e a persistência que antecede `launch_list_joined`.
-- Receber os textos oficiais de Termos e Política de Privacidade.
-- Definir limite de perguntas, oferta de lançamento, campos de lead e consentimento.
-
-## Rodar localmente
+1. Crie um projeto no Supabase e execute [bootstrap.sql](supabase/bootstrap.sql) no SQL Editor.
+2. Em **Authentication → URL Configuration**, adicione `http://localhost:5173` em *Redirect URLs*. Para o Google, habilite o provedor e configure as credenciais no próprio Supabase.
+3. Copie `web/.env.example` para `web/.env` e preencha somente `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_POSTHOG_KEY` e as URLs públicas necessárias.
+4. Copie `server/.env.example` para `server/.env` e preencha as três variáveis do Supabase e o contrato do Professor. A `SUPABASE_SERVICE_ROLE_KEY` permanece exclusivamente aqui.
+5. Instale as dependências e inicie os dois serviços:
 
 ```bash
 pnpm install
 pnpm dev
 ```
 
-Para gerar a versão estática:
+Caso use a URL direta do banco, o bootstrap também pode ser aplicado por:
 
 ```bash
-pnpm build
+psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/bootstrap.sql
 ```
 
-## Publicar no GitHub Pages
+Para iniciar somente a interface:
 
-O workflow em `.github/workflows/deploy-pages.yml` publica automaticamente o site em cada push para a branch `main`.
-
-Depois de enviar o projeto ao GitHub, abra **Settings → Pages** no repositório e, em **Build and deployment**, selecione **GitHub Actions**. Ao término da aba **Actions**, o endereço será:
-
-```text
-https://SEU-USUARIO.github.io/NOME-DO-REPOSITORIO/
+```bash
+pnpm dev:web
 ```
+
+## Fluxos implementados
+
+- Login por magic link e início de login Google pelo Supabase.
+- Lista de lançamento persistida por uma função SQL pública e mínima; a tabela não pode ser lida pelo navegador.
+- Eventos PostHog: `auth_magic_link_requested`, `auth_google_started`, `launch_list_joined`, `professor_question_started`, `professor_question_answered` e `professor_question_failed`.
+- Pergunta livre enviada ao BFF somente com sessão Supabase válida. O BFF reserva cota diária, chama o provedor configurado, persiste pergunta e resposta, e devolve a cota se o provedor falhar.
+
+## Contrato atual do Professor IA
+
+`PROFESSOR_API_URL` deve receber `POST` com:
+
+```json
+{
+  "question": "O que devo analisar?",
+  "user_id": "uuid-do-usuario",
+  "guardrails": ["educational_only", "no_investment_recommendations"]
+}
+```
+
+E responder JSON contendo uma string em `answer`, `response`, `output_text`, `content` ou `text`. Quando o contrato definitivo estiver disponível, esse adaptador fica centralizado em `server/src/index.ts`.
+
+## Segurança
+
+- Nunca use `SUPABASE_SERVICE_ROLE_KEY`, `PROFESSOR_API_KEY` ou segredos de PostHog em `web/.env`.
+- O `bootstrap.sql` habilita RLS nas tabelas sensíveis e concede a reserva de cota somente ao `service_role`.
+- A anon key do Supabase e a chave de projeto do PostHog são deliberadamente públicas; as políticas e o BFF limitam o que elas podem fazer.
