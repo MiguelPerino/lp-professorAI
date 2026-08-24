@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   ChevronRight,
-  CircleHelp,
   Clock3,
   LockKeyhole,
   Menu,
@@ -170,7 +169,6 @@ function App() {
   const [query, setQuery] = useState('')
   const [activeQuestion, setActiveQuestion] = useState(questions[0])
   const [activeFlowStep, setActiveFlowStep] = useState(0)
-  const [answered, setAnswered] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const [liveAnswer, setLiveAnswer] = useState('')
   const [questionError, setQuestionError] = useState('')
@@ -210,7 +208,6 @@ function App() {
 
   const selectQuestion = (question: string) => {
     setActiveQuestion(question)
-    setAnswered(true)
     document.getElementById('demonstracao')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
   }
 
@@ -224,7 +221,6 @@ function App() {
     try {
       const response = await askProfessor(question)
       setLiveAnswer(response.answer)
-      setAnswered(true)
       track('professor_question_answered', { conversation_id: response.conversationId })
     } catch (reason) {
       const message = reason && typeof reason === 'object' && 'message' in reason
@@ -243,39 +239,56 @@ function App() {
 
   return (
     <main id="inicio">
-      <div className="notice"><span>Uma nova forma de entender o mercado</span><a href="#demonstracao">Conheça o Professor IA <ArrowRight size={14} /></a></div>
+      <div className="notice"><span>Professor IA disponível para teste</span><a href="#perguntar">Faça sua primeira pergunta <ArrowRight size={14} /></a></div>
       <header className="header container">
         <Logo />
         <nav className={menuOpen ? 'nav open' : 'nav'} aria-label="Navegação principal">
           <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
-          <a href="#demonstracao" onClick={() => setMenuOpen(false)}>Demonstração</a>
+          <a href="#demonstracao" onClick={() => setMenuOpen(false)}>Ver exemplos</a>
           <button className="nav-cta" onClick={() => { void openProfessor(); setMenuOpen(false) }}>Usar o Professor <ArrowRight size={16} /></button>
         </nav>
         <button className="menu" aria-label="Abrir menu" onClick={() => setMenuOpen(!menuOpen)}><Menu size={24} /></button>
       </header>
 
-      <section className="hero container">
+      <section className="hero container" id="perguntar">
         <div className="hero-copy">
-          <div className="product-label"><span className="pulse-dot" /> Professor IA do AçõesJá</div>
-          <p className="hero-product">Guia educacional de análise</p>
-          <h1>Entenda ações, indicadores e acontecimentos do mercado com o <em>Professor IA.</em></h1>
-          <p>Transforme dados difíceis em explicações simples. O Professor mostra o contexto por trás das informações e ajuda você a entender o que investigar em seguida.</p>
+          <div className="product-label"><span className="pulse-dot" /> Conheça o Professor IA</div>
+          <p className="hero-product">Seu guia educacional dentro do AçõesJá</p>
+          <h1>Entenda o mercado sem ficar perdido nos <em>números.</em></h1>
+          <p>O Professor IA transforma sua dúvida sobre ações, indicadores ou resultados em uma explicação simples — e mostra o que vale investigar depois.</p>
+          <div className="hero-benefits" aria-label="Para que serve o Professor IA">
+            <div><span>01</span><p><strong>Você pergunta</strong> com suas próprias palavras.</p></div>
+            <div><span>02</span><p><strong>Ele explica</strong> o dado e o contexto sem jargão.</p></div>
+            <div><span>03</span><p><strong>Você avança</strong> sabendo o que comparar e investigar.</p></div>
+          </div>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={() => void openProfessor()}>Testar o Professor IA <ArrowDownRight size={18} /></button>
-            <a className="text-link" href="#como-funciona">Ver como funciona <ChevronRight size={16} /></a>
+            <button className="button button-primary" onClick={() => document.getElementById('hero-question')?.focus()}>Testar agora <ArrowDownRight size={18} /></button>
+            <a className="text-link" href="#como-funciona">Entenda como o Professor IA funciona <ChevronRight size={16} /></a>
           </div>
           <div className="trust"><ShieldCheck size={18} /><span>Uma experiência educacional. Sem recomendações de compra ou venda.</span></div>
         </div>
-        <div className="hero-visual" aria-label="Prévia da conversa com o Professor IA">
-          <div className="visual-context">Uma prévia do produto <strong>· AçõesJá</strong></div>
-          <div className="market-card"><span>CONTEXTO DO ATIVO</span><strong>Resultado trimestral <b>+12,4%</b></strong><small>Lucro, expectativa e reação do mercado</small></div>
-          <article className="floating-chat">
-            <div className="chat-top"><ProfessorAvatar /><div><strong>Professor IA</strong><small><i /> guia educacional de análise</small></div><span className="demo-badge">AçõesJá</span></div>
-            <div className="bubble user-mini">{activeQuestion}</div>
-            <div className="bubble professor-mini">O dado é o começo. Vamos comparar o resultado com o que o mercado esperava e investigar o que mudou?</div>
-            <button onClick={() => document.getElementById('demonstracao')?.scrollIntoView({ behavior: 'smooth' })}>Ver uma resposta completa <ChevronRight size={15} /></button>
-          </article>
-          <div className="metric-card"><span>Próxima pergunta</span><strong>O que vale comparar agora?</strong></div>
+        <div className="hero-professor-panel" aria-label="Teste o Professor IA">
+          <div className="hero-professor-head">
+            <div><ProfessorAvatar /><div><strong>Professor IA</strong><small><i /> pronto para ajudar</small></div></div>
+            <span>Teste disponível</span>
+          </div>
+          <div className="hero-professor-intro">
+            <span>ENTENDA COMO FUNCIONA</span>
+            <h2>Comece com uma dúvida real.</h2>
+            <p>Não precisa saber o nome de um indicador. Conte o que você quer entender e o Professor organiza o caminho.</p>
+          </div>
+          <div className="question-box hero-question-box">
+            <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {session ? 'sessão ativa' : 'login seguro ao enviar'}</small></div>
+            <label className="sr-only" htmlFor="hero-question">Sua pergunta</label>
+            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa teve lucro. Por que a ação caiu?" maxLength={280} />
+            <div className="question-suggestions" aria-label="Sugestões de perguntas">
+              {questions.slice(0, 2).map((question) => <button key={question} type="button" onClick={() => setQuery(question)}>{question}</button>)}
+            </div>
+            <div className="question-box-bottom"><small>{query.length}/280</small><button className="button button-primary" disabled={asking || !query.trim()} onClick={startQuestion}>{asking ? 'Analisando...' : 'Perguntar agora'} <ArrowRight size={17} /></button></div>
+            {questionError && <p className="form-error question-error" role="alert">{questionError}</p>}
+            {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
+          </div>
+          <p className="hero-test-note"><Sparkles size={14} /> Seu teste ajuda a validar se o Professor IA deve fazer parte do AçõesJá.</p>
         </div>
       </section>
 
@@ -319,19 +332,6 @@ function App() {
             </div>
             <div className="demo-options"><span>Explore outro exemplo:</span>{questions.filter((q) => q !== activeQuestion).slice(0, 2).map((question) => <button key={question} onClick={() => selectQuestion(question)}>{question}</button>)}</div>
           </article>
-        </div>
-      </section>
-
-      <section className="interactive-section container" id="perguntar">
-        <div className="interactive-copy"><span className="eyebrow">Teste o Professor IA</span><h2>Qual é a sua dúvida hoje?</h2><p>Escreva uma pergunta para experimentar o guia educacional de análise do AçõesJá.</p><ul><li><Check size={16} /> Explicações simples, sem jargão</li><li><Check size={16} /> Foco em contexto e investigação</li><li><Check size={16} /> Limite de experiência por pessoa</li></ul></div>
-        <div className="question-box">
-          <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> login na próxima etapa</small></div>
-          <label className="sr-only" htmlFor="question">Sua pergunta</label>
-          <textarea id="question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: O que devo olhar antes de analisar uma empresa?" maxLength={280} />
-          <div className="question-box-bottom"><small>{query.length}/280</small><button className="button button-dark" disabled={asking} onClick={startQuestion}>{asking ? 'Perguntando...' : 'Continuar'} <ArrowRight size={17} /></button></div>
-          {answered && <p className="preview-note"><CircleHelp size={16} /> Você viu uma demonstração acima. Para fazer uma pergunta livre, continue com seu e-mail.</p>}
-          {questionError && <p className="form-error question-error" role="alert">{questionError}</p>}
-          {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
         </div>
       </section>
 
