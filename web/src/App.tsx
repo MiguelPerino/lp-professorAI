@@ -23,21 +23,21 @@ import { getSupabaseClient } from './lib/supabase'
 type ModalKind = 'auth' | 'checkout' | 'terms' | 'privacy' | null
 
 const questions = [
-  'O P/L da VALE3 está alto para o momento da empresa?',
-  'A dívida da PETR4 é preocupante diante da geração de caixa?',
-  'O ROE do ITUB4 mostra uma rentabilidade saudável?',
-  'O último resultado da WEGE3 mudou sua perspectiva de crescimento?',
+  'A empresa teve lucro. Então por que a ação caiu?',
+  'P/L alto significa que uma ação está cara?',
+  'Como eu sei se a dívida dessa empresa é preocupante?',
+  'O resultado foi bom. O que eu deveria analisar agora?',
 ]
 
 const responses: Record<string, string> = {
   [questions[0]]:
-    'O P/L da VALE3 não deve ser lido sozinho. Ele ganha significado quando você compara o lucro atual com o histórico da Vale, outras mineradoras e o momento do ciclo do minério. Assim, você entende se o múltiplo reflete uma empresa descontada ou um lucro que pode não se sustentar.',
+    'Porque o mercado olha para o futuro, não só para o resultado atual. Se o lucro veio abaixo do esperado, houve pressão de custos ou as projeções pioraram, a ação pode cair mesmo depois de um bom número no presente.',
   [questions[1]]:
-    'Para avaliar a dívida da PETR4, compare a dívida líquida com a geração de caixa, os vencimentos e os investimentos previstos. O número isolado diz pouco; a capacidade atual da empresa de pagar e continuar investindo completa o contexto.',
+    'Não necessariamente. Um P/L alto mostra que o mercado paga mais por cada real de lucro. Isso pode refletir crescimento esperado — e pede que você investigue se esse crescimento parece sustentável.',
   [questions[2]]:
-    'O ROE ajuda a entender quanto o ITUB4 gera sobre o patrimônio, mas precisa ser comparado ao histórico do banco, aos concorrentes e ao risco assumido. Rentabilidade consistente com qualidade de crédito importa mais do que um pico isolado.',
+    'Comece comparando a dívida líquida com a geração de caixa e o EBITDA. Depois, olhe prazos, juros e a capacidade de pagamento: o contexto importa mais que um número isolado.',
   [questions[3]]:
-    'Compare o crescimento, as margens e a entrada de pedidos da WEGE3 com períodos anteriores e com o que o mercado esperava. Isso ajuda a separar uma oscilação pontual de uma mudança real na trajetória da empresa.',
+    'Compare o resultado com as expectativas, os períodos anteriores e empresas do mesmo setor. Depois, investigue se o crescimento veio de uma operação mais forte ou de um evento pontual.',
 }
 
 const flowSteps = [
@@ -45,7 +45,7 @@ const flowSteps = [
     title: 'Escolha a ação',
     summary: 'Você seleciona a empresa que quer entender.',
     explanationTitle: 'A análise começa em uma ação específica.',
-    explanation: 'Escolha um ativo, como VALE3. A partir daí, o Professor sabe qual empresa, setor e momento do mercado devem orientar a conversa.',
+    explanation: 'Escolha a ação que você quer analisar. A partir daí, o Professor sabe qual empresa, setor e momento do mercado devem orientar a conversa.',
   },
   {
     title: 'Dados atuais',
@@ -57,7 +57,7 @@ const flowSteps = [
     title: 'Sua pergunta',
     summary: 'Pergunte sobre a métrica que chamou atenção.',
     explanationTitle: 'Você pergunta do seu jeito.',
-    explanation: 'Por exemplo: “O P/L da VALE3 está alto?”. Não é necessário dominar termos técnicos; basta contar o que você quer compreender.',
+    explanation: 'Você pode perguntar sobre P/L, dívida, resultados ou qualquer dado que chamou sua atenção. Não é necessário dominar termos técnicos; basta contar o que quer compreender.',
   },
   {
     title: 'Explicação',
@@ -257,7 +257,7 @@ function App() {
           <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
           <p>O Professor IA usa as métricas e os dados atualizados da ação que você escolheu para explicar P/L, dívida, resultados e outros indicadores dentro do contexto real daquela empresa.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
-            <div><span>01</span><p><strong>Escolha uma ação</strong> como VALE3, PETR4 ou ITUB4.</p></div>
+            <div><span>01</span><p><strong>Escolha uma ação</strong> que você quer entender melhor.</p></div>
             <div><span>02</span><p><strong>Pergunte sobre os dados</strong> que chamaram sua atenção.</p></div>
             <div><span>03</span><p><strong>Receba uma explicação</strong> baseada naquele ativo.</p></div>
           </div>
@@ -277,15 +277,10 @@ function App() {
             <h2>Uma resposta com o contexto da ação.</h2>
             <p>Escolha o ativo, veja suas métricas atualizadas e pergunte o que aquele número representa para a empresa.</p>
           </div>
-          <div className="asset-context-card" aria-label="Exemplo de ação selecionada: VALE3">
-            <div className="asset-identity"><span>ATIVO SELECIONADO</span><strong>VALE3 <small>Vale</small></strong></div>
-            <div className="asset-status"><i /> Dados em tempo real</div>
-            <div className="asset-metrics"><span>P/L</span><span>ROE</span><span>Dívida</span><span>Margens</span><span>Resultados</span></div>
-          </div>
           <div className="question-box hero-question-box">
             <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {session ? 'sessão ativa' : 'login seguro ao enviar'}</small></div>
             <label className="sr-only" htmlFor="hero-question">Sua pergunta</label>
-            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: O P/L da VALE3 está alto para o momento da empresa?" maxLength={280} />
+            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa teve lucro. Por que a ação caiu?" maxLength={280} />
             <div className="question-suggestions" aria-label="Sugestões de perguntas">
               {questions.slice(0, 2).map((question) => <button key={question} type="button" onClick={() => setQuery(question)}>{question}</button>)}
             </div>
@@ -326,7 +321,7 @@ function App() {
 
       <section className="demo-section" id="demonstracao">
         <div className="container demo-layout">
-          <div className="demo-intro"><span className="eyebrow">Professor IA em ação</span><h2>Ele não responde no vazio. Ele entende a ação com você.</h2><p>Veja como uma pergunta sobre o P/L da VALE3 recebe uma explicação conectada à empresa, ao setor e ao momento analisado.</p><div className="demo-stat"><Clock3 size={18} /><span>Dados atualizados transformados em uma explicação simples e contextualizada.</span></div></div>
+          <div className="demo-intro"><span className="eyebrow">Professor IA em ação</span><h2>Não é uma resposta pronta. É um caminho para investigar.</h2><p>Veja como uma dúvida sobre uma ação se transforma em contexto, explicação e uma próxima pergunta mais inteligente.</p><div className="demo-stat"><Clock3 size={18} /><span>Em poucos minutos, transforme uma dúvida em um caminho de análise.</span></div></div>
           <article className="demo-chat">
             <div className="demo-chat-head"><div><ProfessorAvatar /><div><strong>Professor IA</strong><small>Uma demonstração simulada</small></div></div><span className="demo-badge">AçõesJa</span></div>
             <div className="conversation">
