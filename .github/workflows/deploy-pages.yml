@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -24,7 +24,7 @@ jobs:
       - name: Configurar pnpm
         uses: pnpm/action-setup@v4
         with:
-          version: 11
+          version: 9
 
       - name: Configurar Node.js
         uses: actions/setup-node@v4
@@ -35,19 +35,38 @@ jobs:
       - name: Instalar dependências
         run: pnpm install --frozen-lockfile
 
-      - name: Validar TypeScript
-        run: pnpm exec tsc -b
-
-      - name: Gerar versão estática
-        run: pnpm exec vite build --base=/${{ github.event.repository.name }}/
-
       - name: Configurar Pages
         uses: actions/configure-pages@v5
+
+      - name: Validar TypeScript
+        run: pnpm --filter @acoesja/web exec tsc -b
+
+      - name: Validar configuração pública
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+        run: |
+          test -n "$VITE_SUPABASE_URL" || { echo "::error::Configure a variável VITE_SUPABASE_URL"; exit 1; }
+          test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "::error::Configure a variável VITE_SUPABASE_PUBLISHABLE_KEY"; exit 1; }
+          test -n "$VITE_SERVER_URL" || { echo "::error::Configure a variável VITE_SERVER_URL"; exit 1; }
+
+      - name: Gerar versão estática
+        run: pnpm --filter @acoesja/web exec vite build --base=/${{ github.event.repository.name }}/
+        env:
+          VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
+          VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
+          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+
+      - name: Preparar fallback das rotas da aplicação
+        run: cp web/dist/index.html web/dist/404.html
 
       - name: Enviar arquivos para publicação
         uses: actions/upload-pages-artifact@v4
         with:
-          path: dist
+          path: web/dist
 
   deploy:
     environment:

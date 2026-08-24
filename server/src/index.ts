@@ -1,20 +1,24 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
+import { createServer } from 'node:http'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 
 type Json = Record<string, unknown>
+type SupabaseUser = { id: string; email?: string }
 
 const port = Number(process.env.PORT ?? 8787)
 const supabaseUrl = requiredEnv('SUPABASE_URL')
-const supabaseAnonKey = requiredEnv('SUPABASE_ANON_KEY')
-const supabaseServiceRoleKey = requiredEnv('SUPABASE_SERVICE_ROLE_KEY')
-const professorApiUrl = process.env.PROFESSOR_API_URL
-const professorApiKey = process.env.PROFESSOR_API_KEY
+const supabasePublishableKey =
+  process.env.SUPABASE_PUBLISHABLE_KEY?.trim() || process.env.SUPABASE_ANON_KEY?.trim() || ''
+const supabaseSecretKey =
+  process.env.SUPABASE_SECRET_KEY?.trim() || process.env.SUPABASE_SERVICE_ROLE_KEY?.trim() || ''
+const professorApiUrl = process.env.PROFESSOR_API_URL ?? process.env.PROFESSOR_BACKEND_URL
+const professorApiKey = process.env.PROFESSOR_API_KEY ?? process.env.PROFESSOR_BACKEND_SECRET
 const dailyLimit = Number(process.env.PROFESSOR_DAILY_QUESTION_LIMIT ?? 5)
-const allowedOrigins = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
+const allowedOrigins: string[] = (process.env.CORS_ORIGIN ?? 'http://localhost:5173')
   .split(',')
-  .map((origin) => origin.trim())
+  .map((origin: string) => origin.trim())
   .filter(Boolean)
 
-function requiredEnv(name: string) {
+function requiredEnv(name: string): string {
   const value = process.env[name]
   if (!value && process.env.NODE_ENV === 'production') {
     throw new Error(`Variável obrigatória ausente: ${name}`)
@@ -22,7 +26,7 @@ function requiredEnv(name: string) {
   return value ?? ''
 }
 
-function setCors(request: IncomingMessage, response: ServerResponse) {
+function setCors(request: IncomingMessage, response: ServerResponse): void {
   const origin = request.headers.origin
   if (origin && allowedOrigins.includes(origin)) {
     response.setHeader('Access-Control-Allow-Origin', origin)
@@ -32,7 +36,7 @@ function setCors(request: IncomingMessage, response: ServerResponse) {
   response.setHeader('Access-Control-Allow-Methods', 'OPTIONS, POST, GET')
 }
 
-function send(response: ServerResponse, status: number, body: Json) {
+function send(response: ServerResponse, status: number, body: Json): void {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' })
   response.end(JSON.stringify(body))
 }
@@ -53,20 +57,19 @@ async function readJson(request: IncomingMessage): Promise<Json> {
   }
 }
 
-async function getUser(accessToken: string) {
+async function getUser(accessToken: string): Promise<SupabaseUser | null> {
   const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
-    headers: { apikey: supabaseAnonKey, authorization: `Bearer ${accessToken}` },
+    headers: { apikey: supabasePublishableKey, authorization: `Bearer ${accessToken}` },
   })
   if (!response.ok) return null
-  return (await response.json()) as { id: string; email?: string }
+  return (await response.json()) as SupabaseUser
 }
 
 async function callSupabaseRpc<T>(name: string, body: Json): Promise<T> {
   const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${name}`, {
     method: 'POST',
     headers: {
-      apikey: supabaseServiceRoleKey,
-      authorization: `Bearer ${supabaseServiceRoleKey}`,
+      ...serviceAuthenticationHeaders(),
       'content-type': 'application/json',
     },
     body: JSON.stringify(body),
@@ -75,7 +78,7 @@ async function callSupabaseRpc<T>(name: string, body: Json): Promise<T> {
   return (await response.json()) as T
 }
 
-async function persistConversation(userId: string, question: string, answer: string) {
+async function persistConversation(userId: string, question: string, answer: string): Promise<string> {
   const conversationResponse = await fetch(`${supabaseUrl}/rest/v1/professor_conversations`, {
     method: 'POST',
     headers: serviceHeaders('return=representation'),
@@ -96,12 +99,20 @@ async function persistConversation(userId: string, question: string, answer: str
   return conversation.id
 }
 
-function serviceHeaders(prefer = 'return=minimal') {
+function serviceHeaders(prefer = 'return=minimal'): Record<string, string> {
   return {
-    apikey: supabaseServiceRoleKey,
-    authorization: `Bearer ${supabaseServiceRoleKey}`,
+    ...serviceAuthenticationHeaders(),
     'content-type': 'application/json',
     Prefer: prefer,
+  }
+}
+
+function serviceAuthenticationHeaders(): Record<string, string> {
+  return {
+    apikey: supabaseSecretKey,
+    ...(supabaseSecretKey.startsWith('sb_secret_')
+      ? {}
+      : { authorization: `Bearer ${supabaseSecretKey}` }),
   }
 }
 
@@ -114,7 +125,7 @@ function getAnswer(payload: unknown): string | null {
   return null
 }
 
-async function askProfessor(question: string, userId: string) {
+async function askProfessor(question: string, userId: string): Promise<string> {
   if (!professorApiUrl) throw new Error('Professor IA ainda não está configurado')
   const response = await fetch(professorApiUrl, {
     method: 'POST',
@@ -134,7 +145,7 @@ async function askProfessor(question: string, userId: string) {
   return answer
 }
 
-const server = createServer(async (request, response) => {
+const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
   setCors(request, response)
   if (request.method === 'OPTIONS') return response.writeHead(204).end()
   if (request.method === 'GET' && request.url === '/health') {
@@ -145,8 +156,20 @@ const server = createServer(async (request, response) => {
   }
 
   const token = request.headers.authorization?.replace(/^Bearer\s+/i, '')
-  if (!token || !supabaseUrl || !supabaseAnonKey || !supabaseServiceRoleKey) {
-    return send(response, 401, { error: 'Autenticação necessária ou serviço não configurado' })
+  if (!token) {
+    return send(response, 401, { error: 'Autenticação necessária' })
+  }
+
+  const missingConfiguration = [
+    !supabaseUrl && 'SUPABASE_URL',
+    !supabasePublishableKey && 'SUPABASE_PUBLISHABLE_KEY (ou SUPABASE_ANON_KEY)',
+    !supabaseSecretKey && 'SUPABASE_SECRET_KEY (ou SUPABASE_SERVICE_ROLE_KEY)',
+  ].filter((name): name is string => Boolean(name))
+
+  if (missingConfiguration.length > 0) {
+    return send(response, 503, {
+      error: `Servidor não configurado: ${missingConfiguration.join(', ')}`,
+    })
   }
 
   try {

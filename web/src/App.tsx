@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import {
   ArrowDownRight,
   ArrowRight,
@@ -16,7 +17,9 @@ import {
 import brandLogo from '../../design/Logo preta.jpeg'
 import brandIcon from '../../design/Logo Ícone preto.png'
 import { track } from './lib/analytics'
+import { isSupabaseConfigured } from './lib/config'
 import { askProfessor, joinWaitlist, requestMagicLink, startGoogleLogin } from './lib/services'
+import { getSupabaseClient } from './lib/supabase'
 
 type ModalKind = 'auth' | 'checkout' | 'terms' | 'privacy' | null
 
@@ -103,6 +106,7 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
     : 'Não foi possível concluir agora. Tente novamente.'
 
   const submitAuth = async () => {
+    if (loading) return
     if (!email.trim()) return setError('Informe seu e-mail para continuar.')
     setLoading(true); setError('')
     try {
@@ -155,7 +159,7 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
           <button className="button button-dark wide" disabled={loading} onClick={submitWaitlist}>{loading ? 'Enviando...' : 'Quero receber a condição'} <ArrowRight size={17} /></button>
         </>}
         {error && <p className="form-error" role="alert">{error}</p>}
-        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>{kind === 'auth' ? 'Verifique seu e-mail.' : 'Você está na lista.'}</h3><p>{kind === 'auth' ? 'Enviamos um link seguro para você continuar. Depois de entrar, sua pergunta estará esperando por você.' : 'Seu cadastro foi salvo. Avisaremos você quando houver uma condição de lançamento.'}</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
+        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>{kind === 'auth' ? 'Verifique seu e-mail.' : 'Você está na lista.'}</h3><p>{kind === 'auth' ? 'Enviamos um link de acesso para seu e-mail. Depois de entrar, você voltará para o Professor IA.' : 'Seu cadastro foi salvo. Avisaremos você quando houver uma condição de lançamento.'}</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
       </section>
     </div>
   )
@@ -171,6 +175,38 @@ function App() {
   const [liveAnswer, setLiveAnswer] = useState('')
   const [questionError, setQuestionError] = useState('')
   const [asking, setAsking] = useState(false)
+  const [session, setSession] = useState<Session | null>(null)
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return
+    let active = true
+    const supabase = getSupabaseClient()
+
+    void supabase.auth.getSession().then(({ data }) => {
+      if (active) setSession(data.session)
+    })
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      if (active) setSession(nextSession)
+    })
+
+    return () => {
+      active = false
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  const openProfessor = async () => {
+    const currentSession = session ?? (isSupabaseConfigured
+      ? (await getSupabaseClient().auth.getSession()).data.session
+      : null)
+
+    if (currentSession) {
+      document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      return
+    }
+    setModal('auth')
+  }
 
   const selectQuestion = (question: string) => {
     setActiveQuestion(question)
@@ -213,7 +249,7 @@ function App() {
         <nav className={menuOpen ? 'nav open' : 'nav'} aria-label="Navegação principal">
           <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
           <a href="#demonstracao" onClick={() => setMenuOpen(false)}>Demonstração</a>
-          <button className="nav-cta" onClick={() => { setModal('auth'); setMenuOpen(false) }}>Usar o Professor <ArrowRight size={16} /></button>
+          <button className="nav-cta" onClick={() => { void openProfessor(); setMenuOpen(false) }}>Usar o Professor <ArrowRight size={16} /></button>
         </nav>
         <button className="menu" aria-label="Abrir menu" onClick={() => setMenuOpen(!menuOpen)}><Menu size={24} /></button>
       </header>
@@ -225,7 +261,7 @@ function App() {
           <h1>Entenda ações, indicadores e acontecimentos do mercado com o <em>Professor IA.</em></h1>
           <p>Transforme dados difíceis em explicações simples. O Professor mostra o contexto por trás das informações e ajuda você a entender o que investigar em seguida.</p>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={() => setModal('auth')}>Testar o Professor IA <ArrowDownRight size={18} /></button>
+            <button className="button button-primary" onClick={() => void openProfessor()}>Testar o Professor IA <ArrowDownRight size={18} /></button>
             <a className="text-link" href="#como-funciona">Ver como funciona <ChevronRight size={16} /></a>
           </div>
           <div className="trust"><ShieldCheck size={18} /><span>Uma experiência educacional. Sem recomendações de compra ou venda.</span></div>
