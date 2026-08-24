@@ -23,53 +23,53 @@ import { getSupabaseClient } from './lib/supabase'
 type ModalKind = 'auth' | 'checkout' | 'terms' | 'privacy' | null
 
 const questions = [
-  'A empresa teve lucro. Então por que a ação caiu?',
-  'P/L alto significa que uma ação está cara?',
-  'Como eu sei se a dívida dessa empresa é preocupante?',
-  'O resultado foi bom. O que eu deveria analisar agora?',
+  'O P/L da VALE3 está alto para o momento da empresa?',
+  'A dívida da PETR4 é preocupante diante da geração de caixa?',
+  'O ROE do ITUB4 mostra uma rentabilidade saudável?',
+  'O último resultado da WEGE3 mudou sua perspectiva de crescimento?',
 ]
 
 const responses: Record<string, string> = {
   [questions[0]]:
-    'Porque o mercado olha para o futuro, não só para o resultado atual. Se o lucro veio abaixo do esperado, houve pressão de custos ou as projeções pioraram, a ação pode cair mesmo depois de um bom número no presente.',
+    'O P/L da VALE3 não deve ser lido sozinho. Ele ganha significado quando você compara o lucro atual com o histórico da Vale, outras mineradoras e o momento do ciclo do minério. Assim, você entende se o múltiplo reflete uma empresa descontada ou um lucro que pode não se sustentar.',
   [questions[1]]:
-    'Não necessariamente. Um P/L alto mostra que o mercado paga mais por cada real de lucro. Isso pode refletir crescimento esperado — e pede que você investigue se esse crescimento parece sustentável.',
+    'Para avaliar a dívida da PETR4, compare a dívida líquida com a geração de caixa, os vencimentos e os investimentos previstos. O número isolado diz pouco; a capacidade atual da empresa de pagar e continuar investindo completa o contexto.',
   [questions[2]]:
-    'Comece comparando a dívida líquida com a geração de caixa e o EBITDA. Depois, olhe prazos, juros e a capacidade de pagamento: o contexto importa mais que um número isolado.',
+    'O ROE ajuda a entender quanto o ITUB4 gera sobre o patrimônio, mas precisa ser comparado ao histórico do banco, aos concorrentes e ao risco assumido. Rentabilidade consistente com qualidade de crédito importa mais do que um pico isolado.',
   [questions[3]]:
-    'Compare o resultado com as expectativas, os períodos anteriores e empresas do mesmo setor. Depois, investigue se o crescimento veio de uma operação mais forte ou de um evento pontual.',
+    'Compare o crescimento, as margens e a entrada de pedidos da WEGE3 com períodos anteriores e com o que o mercado esperava. Isso ajuda a separar uma oscilação pontual de uma mudança real na trajetória da empresa.',
 }
 
 const flowSteps = [
   {
-    title: 'Dado',
-    summary: 'Você encontra um número ou acontecimento.',
-    explanationTitle: 'Comece pelo que chamou a sua atenção.',
-    explanation: 'Pode ser uma queda na ação, um lucro que mudou, uma margem menor ou um indicador fora do padrão. O dado é o ponto de partida — não uma conclusão isolada.',
+    title: 'Escolha a ação',
+    summary: 'Você seleciona a empresa que quer entender.',
+    explanationTitle: 'A análise começa em uma ação específica.',
+    explanation: 'Escolha um ativo, como VALE3. A partir daí, o Professor sabe qual empresa, setor e momento do mercado devem orientar a conversa.',
   },
   {
-    title: 'Contexto',
-    summary: 'O que mudou no ativo, setor ou mercado?',
-    explanationTitle: 'Todo dado precisa de uma história ao redor.',
-    explanation: 'O Professor ajuda a conectar o número ao momento da empresa, às expectativas do mercado, ao setor e aos acontecimentos que podem explicar a variação.',
+    title: 'Dados atuais',
+    summary: 'Métricas e acontecimentos entram no contexto.',
+    explanationTitle: 'Os números da ação dão base à resposta.',
+    explanation: 'P/L, ROE, dívida, margens, resultados e dados atualizados ajudam o Professor a responder sobre a situação real daquela empresa — não sobre um exemplo genérico.',
+  },
+  {
+    title: 'Sua pergunta',
+    summary: 'Pergunte sobre a métrica que chamou atenção.',
+    explanationTitle: 'Você pergunta do seu jeito.',
+    explanation: 'Por exemplo: “O P/L da VALE3 está alto?”. Não é necessário dominar termos técnicos; basta contar o que você quer compreender.',
   },
   {
     title: 'Explicação',
-    summary: 'O Professor traduz o que isso pode significar.',
-    explanationTitle: 'Entenda o significado antes de tirar conclusões.',
-    explanation: 'Em linguagem simples, você descobre o que o indicador mede, por que ele importa e quais interpretações fazem sentido naquele contexto.',
+    summary: 'O Professor conecta a métrica à empresa.',
+    explanationTitle: 'A resposta considera o contexto escolhido.',
+    explanation: 'O Professor traduz o indicador e explica o que ele pode representar naquele ativo, considerando histórico, setor e momento da empresa.',
   },
   {
-    title: 'Investigação',
-    summary: 'Ele mostra o que comparar e observar.',
-    explanationTitle: 'A resposta abre caminhos para investigar melhor.',
-    explanation: 'O Professor sugere comparações, períodos e perguntas complementares para que você não dependa de um único número ao analisar uma empresa.',
-  },
-  {
-    title: 'Próxima pergunta',
-    summary: 'Você aprofunda com mais clareza.',
-    explanationTitle: 'Uma boa análise leva à próxima dúvida.',
-    explanation: 'Com mais contexto, você formula perguntas mais específicas e continua aprendendo sobre o ativo de forma progressiva.',
+    title: 'Próximo passo',
+    summary: 'Você descobre o que comparar e investigar.',
+    explanationTitle: 'A explicação vira um caminho de análise.',
+    explanation: 'Além de responder, o Professor mostra quais métricas, períodos e empresas podem ser comparados para você continuar investigando com clareza.',
   },
 ]
 
@@ -254,12 +254,12 @@ function App() {
         <div className="hero-copy">
           <div className="product-label"><span className="pulse-dot" /> Conheça o Professor IA</div>
           <p className="hero-product">Seu guia educacional dentro do AçõesJa</p>
-          <h1>Entenda o mercado sem ficar perdido nos <em>números.</em></h1>
-          <p>O Professor IA transforma sua dúvida sobre ações, indicadores ou resultados em uma explicação simples — e mostra o que vale investigar depois.</p>
+          <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
+          <p>O Professor IA usa as métricas e os dados atualizados da ação que você escolheu para explicar P/L, dívida, resultados e outros indicadores dentro do contexto real daquela empresa.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
-            <div><span>01</span><p><strong>Você pergunta</strong> com suas próprias palavras.</p></div>
-            <div><span>02</span><p><strong>Ele explica</strong> o dado e o contexto sem jargão.</p></div>
-            <div><span>03</span><p><strong>Você avança</strong> sabendo o que comparar e investigar.</p></div>
+            <div><span>01</span><p><strong>Escolha uma ação</strong> como VALE3, PETR4 ou ITUB4.</p></div>
+            <div><span>02</span><p><strong>Pergunte sobre os dados</strong> que chamaram sua atenção.</p></div>
+            <div><span>03</span><p><strong>Receba uma explicação</strong> baseada naquele ativo.</p></div>
           </div>
           <div className="hero-actions">
             <a className="button button-primary" href="#demonstracao">Ver demonstração <ArrowDownRight size={18} /></a>
@@ -274,13 +274,18 @@ function App() {
           </div>
           <div className="hero-professor-intro">
             <span>ENTENDA COMO FUNCIONA</span>
-            <h2>Comece com uma dúvida real.</h2>
-            <p>Não precisa saber o nome de um indicador. Conte o que você quer entender e o Professor organiza o caminho.</p>
+            <h2>Uma resposta com o contexto da ação.</h2>
+            <p>Escolha o ativo, veja suas métricas atualizadas e pergunte o que aquele número representa para a empresa.</p>
+          </div>
+          <div className="asset-context-card" aria-label="Exemplo de ação selecionada: VALE3">
+            <div className="asset-identity"><span>ATIVO SELECIONADO</span><strong>VALE3 <small>Vale</small></strong></div>
+            <div className="asset-status"><i /> Dados em tempo real</div>
+            <div className="asset-metrics"><span>P/L</span><span>ROE</span><span>Dívida</span><span>Margens</span><span>Resultados</span></div>
           </div>
           <div className="question-box hero-question-box">
             <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {session ? 'sessão ativa' : 'login seguro ao enviar'}</small></div>
             <label className="sr-only" htmlFor="hero-question">Sua pergunta</label>
-            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa teve lucro. Por que a ação caiu?" maxLength={280} />
+            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: O P/L da VALE3 está alto para o momento da empresa?" maxLength={280} />
             <div className="question-suggestions" aria-label="Sugestões de perguntas">
               {questions.slice(0, 2).map((question) => <button key={question} type="button" onClick={() => setQuery(question)}>{question}</button>)}
             </div>
@@ -293,14 +298,14 @@ function App() {
       </section>
 
       <section className="context-section container" id="como-funciona">
-        <div><span className="eyebrow">Como o Professor ajuda</span><h2>Mais do que uma resposta. Contexto para você entender melhor.</h2></div>
-        <p>Entenda o que um dado significa, como ele se relaciona com a situação analisada e o que vale investigar depois.</p>
+        <div><span className="eyebrow">Como o Professor ajuda</span><h2>Da ação escolhida à explicação que faz sentido.</h2></div>
+        <p>O Professor parte dos dados da empresa selecionada para explicar a métrica no contexto daquele ativo e indicar o que vale investigar depois.</p>
         <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJa">
           <div><span>O ecossistema</span><strong>AçõesJa</strong></div>
           <ArrowDownRight size={18} />
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
-        <div className="flow" aria-label="Dado leva a contexto, explicação, investigação e próxima pergunta">
+        <div className="flow" aria-label="Ação escolhida leva a dados atuais, pergunta, explicação e próximo passo">
           {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item${activeFlowStep === index ? ' active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
         <article className="flow-explainer" aria-live="polite">
@@ -312,7 +317,7 @@ function App() {
 
       <section className="question-strip" aria-labelledby="question-title">
         <div className="container">
-          <p id="question-title"><Sparkles size={16} /> Perguntas que abrem a análise</p>
+          <p id="question-title"><Sparkles size={16} /> Uma ação, seus dados e as perguntas certas</p>
           <div className="question-pills">
             {questions.map((question) => <button key={question} onClick={() => selectQuestion(question)}>{question}<ArrowRight size={15} /></button>)}
           </div>
@@ -321,7 +326,7 @@ function App() {
 
       <section className="demo-section" id="demonstracao">
         <div className="container demo-layout">
-          <div className="demo-intro"><span className="eyebrow">Professor IA em ação</span><h2>Não é uma resposta pronta. É um caminho para investigar.</h2><p>Veja como uma dúvida real se transforma em contexto, explicação e uma próxima pergunta mais inteligente.</p><div className="demo-stat"><Clock3 size={18} /><span>Em poucos minutos, transforme uma dúvida em um caminho de análise.</span></div></div>
+          <div className="demo-intro"><span className="eyebrow">Professor IA em ação</span><h2>Ele não responde no vazio. Ele entende a ação com você.</h2><p>Veja como uma pergunta sobre o P/L da VALE3 recebe uma explicação conectada à empresa, ao setor e ao momento analisado.</p><div className="demo-stat"><Clock3 size={18} /><span>Dados atualizados transformados em uma explicação simples e contextualizada.</span></div></div>
           <article className="demo-chat">
             <div className="demo-chat-head"><div><ProfessorAvatar /><div><strong>Professor IA</strong><small>Uma demonstração simulada</small></div></div><span className="demo-badge">AçõesJa</span></div>
             <div className="conversation">
