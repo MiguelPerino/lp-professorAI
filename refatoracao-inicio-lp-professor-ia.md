@@ -1,8 +1,8 @@
-# Refatoração do início da Landing Page — Professor IA do AçõesJá
+# Refatoração do início da Landing Page — Professor IA do AçõesJa
 
 ## Objetivo desta tarefa
 
-Refatorar **somente o início da landing page atual** para deixar muito mais explícito, logo nos primeiros segundos, que o foco principal da página é o **Professor IA do AçõesJá**.
+Refatorar **somente o início da landing page atual** para deixar muito mais explícito, logo nos primeiros segundos, que o foco principal da página é o **Professor IA do AçõesJa**.
 
 A estrutura geral da LP foi considerada boa e deve ser preservada.
 
@@ -91,7 +91,7 @@ Refatorar o hero para que o Professor IA seja o protagonista.
 Acima da headline, adicionar algo como:
 
 ```text
-Professor IA do AçõesJá
+Professor IA do AçõesJa
 ```
 
 Isso deve funcionar como identificação do produto/diferencial.
@@ -164,7 +164,7 @@ Em desktop, preferir um layout aproximadamente assim:
 
 ```text
 ┌─────────────────────────────┐   ┌─────────────────────────────┐
-│ Professor IA do AçõesJá     │   │ PROFESSOR IA               │
+│ Professor IA do AçõesJa     │   │ PROFESSOR IA               │
 │                             │   │                             │
 │ Headline                    │   │ Você                        │
 │                             │   │ "P/L alto é sempre ruim?"  │
@@ -300,24 +300,24 @@ O Professor não deve parecer:
 
 Ele deve parecer:
 
-> **uma ferramenta educacional do AçõesJá que ajuda o investidor a entender dados, contexto e o que investigar depois.**
+> **uma ferramenta educacional do AçõesJa que ajuda o investidor a entender dados, contexto e o que investigar depois.**
 
 Essa diferença precisa aparecer no texto e na interface.
 
 ---
 
-# 14. Relação com o AçõesJá
+# 14. Relação com o AçõesJa
 
 Não esconder a marca.
 
 Deixar claro desde o início:
 
-> **Professor IA do AçõesJá**
+> **Professor IA do AçõesJa**
 
 A pessoa deve entender:
 
 ```text
-AçõesJá = ecossistema
+AçõesJa = ecossistema
 Professor IA = principal diferencial apresentado nesta LP
 ```
 
@@ -329,7 +329,7 @@ Não apresentar o Professor como empresa separada.
 
 Em uma tela desktop comum, tentar deixar visíveis sem rolagem excessiva:
 
-- logo AçõesJá;
+- logo AçõesJa;
 - identificação Professor IA;
 - headline;
 - subheadline;
@@ -465,7 +465,7 @@ Só depois alterar.
 A tarefa está concluída quando:
 
 - [ ] o Professor IA aparece explicitamente na primeira dobra;
-- [ ] fica claro que ele pertence ao AçõesJá;
+- [ ] fica claro que ele pertence ao AçõesJa;
 - [ ] fica claro o que ele faz;
 - [ ] fica claro que o diferencial é contexto + entendimento + investigação;
 - [ ] o CTA "Testar o Professor IA" está evidente;
@@ -488,7 +488,7 @@ Depois de implementar, revisar a página como se fosse um visitante chegando pel
 Responder internamente:
 
 1. Em 5 segundos eu sei o que é o Professor?
-2. Em 5 segundos eu sei que ele pertence ao AçõesJá?
+2. Em 5 segundos eu sei que ele pertence ao AçõesJa?
 3. Eu sei o que ele faz?
 4. Eu entendo por que contexto é importante?
 5. Eu sei onde clicar para testar?

@@ -75,8 +75,8 @@ const flowSteps = [
 
 function Logo() {
   return (
-    <a className="brand" href="#inicio" aria-label="AçõesJá, início">
-      <img src={brandLogo} alt="AçõesJá" />
+    <a className="brand" href="#inicio" aria-label="AçõesJa, início">
+      <img src={brandLogo} alt="AçõesJa" />
     </a>
   )
 }
@@ -94,8 +94,8 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
   const [whatsapp, setWhatsapp] = useState('')
   const [marketingConsent, setMarketingConsent] = useState(false)
   const details = useMemo(() => {
-    if (kind === 'terms') return { eyebrow: 'AçõesJá', title: 'Termos de Uso', text: 'O texto oficial dos Termos de Uso será inserido aqui antes da publicação. Neste protótipo, este modal valida apenas a experiência de leitura sem abrir uma nova página.' }
-    if (kind === 'privacy') return { eyebrow: 'AçõesJá', title: 'Política de Privacidade', text: 'O texto oficial da Política de Privacidade será inserido aqui antes da publicação. Neste protótipo, nenhum dado enviado é armazenado.' }
+    if (kind === 'terms') return { eyebrow: 'AçõesJa', title: 'Termos de Uso', text: 'O texto oficial dos Termos de Uso será inserido aqui antes da publicação. Neste protótipo, este modal valida apenas a experiência de leitura sem abrir uma nova página.' }
+    if (kind === 'privacy') return { eyebrow: 'AçõesJa', title: 'Política de Privacidade', text: 'O texto oficial da Política de Privacidade será inserido aqui antes da publicação. Neste protótipo, nenhum dado enviado é armazenado.' }
     if (kind === 'auth') return { eyebrow: 'Professor IA', title: 'Continue para fazer sua pergunta', text: 'O Professor usa sua identificação para liberar a experiência e aplicar um limite individual de interações.' }
     return { eyebrow: 'Professor IA', title: 'O lançamento ainda não está aberto.', text: 'Entre na lista para receber uma condição especial quando o Professor estiver disponível.' }
   }, [kind])
@@ -253,7 +253,7 @@ function App() {
       <section className="hero container" id="perguntar">
         <div className="hero-copy">
           <div className="product-label"><span className="pulse-dot" /> Conheça o Professor IA</div>
-          <p className="hero-product">Seu guia educacional dentro do AçõesJá</p>
+          <p className="hero-product">Seu guia educacional dentro do AçõesJa</p>
           <h1>Entenda o mercado sem ficar perdido nos <em>números.</em></h1>
           <p>O Professor IA transforma sua dúvida sobre ações, indicadores ou resultados em uma explicação simples — e mostra o que vale investigar depois.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
@@ -262,7 +262,7 @@ function App() {
             <div><span>03</span><p><strong>Você avança</strong> sabendo o que comparar e investigar.</p></div>
           </div>
           <div className="hero-actions">
-            <button className="button button-primary" onClick={() => document.getElementById('hero-question')?.focus()}>Testar agora <ArrowDownRight size={18} /></button>
+            <a className="button button-primary" href="#demonstracao">Ver demonstração <ArrowDownRight size={18} /></a>
             <a className="text-link" href="#como-funciona">Entenda como o Professor IA funciona <ChevronRight size={16} /></a>
           </div>
           <div className="trust"><ShieldCheck size={18} /><span>Uma experiência educacional. Sem recomendações de compra ou venda.</span></div>
@@ -288,20 +288,20 @@ function App() {
             {questionError && <p className="form-error question-error" role="alert">{questionError}</p>}
             {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
           </div>
-          <p className="hero-test-note"><Sparkles size={14} /> Seu teste ajuda a validar se o Professor IA deve fazer parte do AçõesJá.</p>
+          <p className="hero-test-note"><Sparkles size={14} /> Seu teste ajuda a validar se o Professor IA deve fazer parte do AçõesJa.</p>
         </div>
       </section>
 
       <section className="context-section container" id="como-funciona">
         <div><span className="eyebrow">Como o Professor ajuda</span><h2>Mais do que uma resposta. Contexto para você entender melhor.</h2></div>
         <p>Entenda o que um dado significa, como ele se relaciona com a situação analisada e o que vale investigar depois.</p>
-        <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJá">
-          <div><span>O ecossistema</span><strong>AçõesJá</strong></div>
+        <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJa">
+          <div><span>O ecossistema</span><strong>AçõesJa</strong></div>
           <ArrowDownRight size={18} />
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
         <div className="flow" aria-label="Dado leva a contexto, explicação, investigação e próxima pergunta">
-          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item ${index === 1 ? 'highlighted ' : ''}${activeFlowStep === index ? 'active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
+          {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item${activeFlowStep === index ? ' active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
         <article className="flow-explainer" aria-live="polite">
           <span>Etapa {activeFlowStep + 1} · {flowSteps[activeFlowStep].title}</span>
@@ -323,7 +323,7 @@ function App() {
         <div className="container demo-layout">
           <div className="demo-intro"><span className="eyebrow">Professor IA em ação</span><h2>Não é uma resposta pronta. É um caminho para investigar.</h2><p>Veja como uma dúvida real se transforma em contexto, explicação e uma próxima pergunta mais inteligente.</p><div className="demo-stat"><Clock3 size={18} /><span>Em poucos minutos, transforme uma dúvida em um caminho de análise.</span></div></div>
           <article className="demo-chat">
-            <div className="demo-chat-head"><div><ProfessorAvatar /><div><strong>Professor IA</strong><small>Uma demonstração simulada</small></div></div><span className="demo-badge">AçõesJá</span></div>
+            <div className="demo-chat-head"><div><ProfessorAvatar /><div><strong>Professor IA</strong><small>Uma demonstração simulada</small></div></div><span className="demo-badge">AçõesJa</span></div>
             <div className="conversation">
               <span className="speaker">VOCÊ</span>
               <p className="user-message">{activeQuestion}</p>
@@ -339,7 +339,7 @@ function App() {
         <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quando o Professor estiver disponível, você quer continuar a conversa?</h2></div><button className="button button-light" onClick={() => setModal('checkout')}>Quero receber a condição de lançamento <ArrowRight size={18} /></button></div>
       </section>
 
-      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJá</span></div></footer>
+      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJa. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJa</span></div></footer>
       {modal && <Modal kind={modal} onClose={() => setModal(null)} />}
     </main>
   )

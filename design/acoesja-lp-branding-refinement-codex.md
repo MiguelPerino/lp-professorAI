@@ -1,4 +1,4 @@
-# AçõesJá — Prompt para Refinamento Visual da LP do Professor IA
+# AçõesJa — Prompt para Refinamento Visual da LP do Professor IA
 
 ## Objetivo
 
@@ -9,9 +9,9 @@ A LP atual já possui uma estrutura considerada boa. **Não refazer a arquitetur
 O objetivo desta etapa é:
 
 1. preservar a estrutura e UX que já funcionam;
-2. incorporar a identidade visual do AçõesJá;
+2. incorporar a identidade visual do AçõesJa;
 3. inserir corretamente a logo oficial;
-4. aproximar a LP visualmente do produto principal AçõesJá;
+4. aproximar a LP visualmente do produto principal AçõesJa;
 5. aumentar a evidência visual do Professor IA no início da página;
 6. manter a implementação simples e fácil de iterar.
 
@@ -27,11 +27,11 @@ URL:
 
 `https://www.acoesja.com.br/`
 
-A LP deve parecer uma extensão natural do AçõesJá.
+A LP deve parecer uma extensão natural do AçõesJa.
 
 O produto principal atualmente apresenta:
 
-- AçõesJá como marca principal;
+- AçõesJa como marca principal;
 - busca por ativo;
 - análise de fundamentos;
 - carteira;
@@ -57,7 +57,7 @@ Logo/Logo preta.jpeg
 Logo/Logo branca.jpeg
 ```
 
-A logo oficial possui o símbolo característico do AçõesJá em roxo.
+A logo oficial possui o símbolo característico do AçõesJa em roxo.
 
 ### C. Considerações finais da LP
 
@@ -100,11 +100,11 @@ Antes de editar:
 
 ---
 
-# 3. Identidade AçõesJá
+# 3. Identidade AçõesJa
 
 A página deve parecer:
 
-> **AçõesJá + Professor IA**
+> **AçõesJa + Professor IA**
 
 e não:
 
@@ -143,7 +143,7 @@ A tecnologia deve aparecer através do **Professor funcionando**, e não atravé
 
 # 4. Logo
 
-Adicionar a logo oficial AçõesJá no topo da LP.
+Adicionar a logo oficial AçõesJa no topo da LP.
 
 ## Regras
 
@@ -172,7 +172,7 @@ Os botões atuais do topo foram considerados bons.
 - alinhamento;
 - cores;
 - estados hover/focus;
-- relação visual com a identidade AçõesJá.
+- relação visual com a identidade AçõesJa.
 
 Header esperado:
 
@@ -183,7 +183,7 @@ Header esperado:
 O Professor deve aparecer como parte da marca:
 
 ```text
-AçõesJá
+AçõesJa
 Professor IA
 ```
 
@@ -215,7 +215,7 @@ exemplos / preview da experiência
 
 O usuário precisa entender nos primeiros segundos:
 
-1. está no AçõesJá;
+1. está no AçõesJa;
 2. o destaque é o Professor IA;
 3. ele pode experimentar;
 4. o Professor ajuda a entender investimentos.
@@ -354,7 +354,7 @@ Isso deve ser visualmente forte, mas sem virar uma seção excessivamente longa.
 
 ---
 
-# 12. Relação Professor ↔ AçõesJá
+# 12. Relação Professor ↔ AçõesJa
 
 Criar uma seção ou bloco deixando clara a relação:
 
@@ -370,7 +370,7 @@ A experiência de aprendizado e investigação
 
 O usuário precisa perceber que:
 
-> O Professor IA é o diferencial do AçõesJá.
+> O Professor IA é o diferencial do AçõesJa.
 
 Não fazer parecer que o Professor é outra empresa.
 
@@ -378,7 +378,7 @@ Não fazer parecer que o Professor é outra empresa.
 
 # 13. Cores
 
-A paleta deve partir da identidade real do AçõesJá.
+A paleta deve partir da identidade real do AçõesJa.
 
 O logo oficial enviado possui o símbolo em tonalidade roxa.
 
@@ -415,7 +415,7 @@ Criar tokens CSS centralizados, por exemplo:
 }
 ```
 
-Os valores exatos devem ser derivados dos assets/estilo já existente do AçõesJá, não inventados arbitrariamente.
+Os valores exatos devem ser derivados dos assets/estilo já existente do AçõesJa, não inventados arbitrariamente.
 
 ---
 
@@ -637,7 +637,7 @@ Antes de codar:
 Depois:
 
 1. adicionar logo oficial;
-2. aplicar identidade AçõesJá;
+2. aplicar identidade AçõesJa;
 3. ajustar cores;
 4. ajustar tipografia;
 5. aumentar a área visual do Professor;
@@ -676,7 +676,7 @@ Não recriar a logo.
 
 Ao terminar, o usuário deve sentir:
 
-> "Isso é claramente AçõesJá."
+> "Isso é claramente AçõesJa."
 
 e, imediatamente depois:
 
@@ -689,7 +689,7 @@ O resultado desta tarefa deve ser:
 ```text
 estrutura atual
 +
-identidade AçõesJá
+identidade AçõesJa
 +
 logo oficial
 +
@@ -712,7 +712,7 @@ Não criar uma LP completamente nova.
 
 Considerar concluído somente quando:
 
-- logo AçõesJá aparece corretamente;
+- logo AçõesJa aparece corretamente;
 - a paleta visual está coerente com a marca;
 - o hero deixa claro que o Professor é o foco;
 - o CTA "Testar o Professor IA" é evidente;
@@ -734,7 +734,7 @@ Considerar concluído somente quando:
 
 A LP deve impressionar porque o produto parece bom.
 
-A identidade deve vir do AçõesJá.
+A identidade deve vir do AçõesJa.
 
 O Professor deve ser o protagonista.
 

@@ -1,4 +1,4 @@
-# AçõesJá — Professor IA
+# AçõesJa — Professor IA
 
 O repositório está organizado por responsabilidade:
 

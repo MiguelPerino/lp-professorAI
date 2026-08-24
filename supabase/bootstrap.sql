@@ -1,4 +1,4 @@
--- Bootstrap inicial do Professor IA | AçõesJá
+-- Bootstrap inicial do Professor IA | AçõesJa
 -- Execute uma vez no SQL Editor do Supabase ou com:
 -- psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/bootstrap.sql
 -- O script é idempotente e não contém credenciais.
