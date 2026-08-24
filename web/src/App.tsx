@@ -252,8 +252,8 @@ function App() {
 
       <section className="hero container" id="perguntar">
         <div className="hero-copy">
-          <div className="product-label"><span className="pulse-dot" /> Conheça o Professor IA</div>
-          <p className="hero-product">Seu guia educacional dentro do AçõesJa</p>
+          <div className="product-label"><span className="pulse-dot" /> Entenda o que é e como funciona o Professor IA</div>
+          <p className="hero-product">Seu guia educacional dentro do AçõesJa.</p>
           <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
           <p>O Professor IA usa as métricas e os dados atualizados da ação que você escolheu para explicar P/L, dívida, resultados e outros indicadores dentro do contexto real daquela empresa.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
@@ -280,7 +280,7 @@ function App() {
           <div className="question-box hero-question-box">
             <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {session ? 'sessão ativa' : 'login seguro ao enviar'}</small></div>
             <label className="sr-only" htmlFor="hero-question">Sua pergunta</label>
-            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa teve lucro. Por que a ação caiu?" maxLength={280} />
+            <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa X teve lucro. Por que a ação dela caiu?" maxLength={280} />
             <div className="question-suggestions" aria-label="Sugestões de perguntas">
               {questions.slice(0, 2).map((question) => <button key={question} type="button" onClick={() => setQuery(question)}>{question}</button>)}
             </div>
