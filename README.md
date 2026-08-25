@@ -48,7 +48,13 @@ conversas.
 O login envia um OTP de oito dígitos pelo Supabase e valida o código com
 `verifyOtp`; depois da confirmação, o SDK mantém e renova a sessão.
 
-No Supabase, o template de e-mail deve exibir `{{ .Token }}`. A geração, expiração e validação do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas um cooldown visual de 60 segundos para reenvio.
+No Supabase hospedado, abra **Authentication → Email Templates → Magic Link**,
+use o assunto `Seu código de acesso ao Professor IA` e cole o conteúdo de
+`supabase/templates/professor-otp.html`. O template deve preservar
+`{{ .Token }}`; usar `{{ .ConfirmationURL }}` transforma o mesmo fluxo em Magic
+Link e deixa a interface de código incoerente. A geração, expiração e validação
+do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas
+um cooldown visual de 60 segundos para reenvio.
 
 O backend AçõesJá mantém allowlist CORS exata para o domínio alvo, Vercel e
 GitHub Pages. Uma falha real nunca é substituída por exemplo simulado.

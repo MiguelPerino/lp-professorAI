@@ -1,4 +1,4 @@
-import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowDownRight,
   ArrowRight,
@@ -25,6 +25,7 @@ import { askProfessor, getProfessorUsage, getProfessorUserId, hasProfessorSessio
 type ModalKind = 'checkout' | null
 const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
 const PROFESSOR_OTP_LENGTH = 8
+const ProfessorAnswer = lazy(() => import('./components/ProfessorAnswer'))
 
 const questions = [
   'A empresa teve lucro. Então por que a ação caiu?',
@@ -98,7 +99,7 @@ function Modal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [marketingConsent, setMarketingConsent] = useState(false)
-  const details = { eyebrow: 'Professor IA', title: 'O lançamento ainda não está aberto.', text: 'Entre na lista para receber uma condição especial quando o Professor estiver disponível.' }
+  const details = { eyebrow: 'Professor IA', title: 'Acompanhe os próximos passos.', text: 'Entre na lista para receber novidades sobre a evolução do Professor IA e do AçõesJá.' }
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
@@ -147,10 +148,10 @@ function Modal({ onClose }: { onClose: () => void }) {
           <label className="field-label optional" htmlFor="lead-whatsapp">WhatsApp <span>opcional</span></label>
           <input id="lead-whatsapp" type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="(11) 99999-9999" />
           <label className="consent"><input type="checkbox" checked={marketingConsent} onChange={(event) => setMarketingConsent(event.target.checked)} /> <span>Quero receber novidades do lançamento por e-mail.</span></label>
-          <button className="button button-dark wide" disabled={loading} onClick={submitWaitlist}>{loading ? 'Enviando...' : 'Quero receber a condição'} <ArrowRight size={17} /></button>
+          <button className="button button-dark wide" disabled={loading} onClick={submitWaitlist}>{loading ? 'Enviando...' : 'Quero acompanhar as novidades'} <ArrowRight size={17} /></button>
         </>}
         {error && <p className="form-error" role="alert">{error}</p>}
-        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>Você está na lista.</h3><p>Seu cadastro foi salvo. Avisaremos você quando houver uma condição de lançamento.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
+        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>Cadastro confirmado.</h3><p>Você receberá novidades relevantes sobre o Professor IA e o AçõesJá.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
       </section>
     </div>
   )
@@ -493,7 +494,7 @@ function App() {
               <div className="usage-ring" style={{ '--usage-percent': `${Math.min(100, Math.round((professorUsage.callsToday / Math.max(1, professorUsage.dailyCallLimit)) * 100))}%` } as CSSProperties}><strong>{professorUsage.callsToday}</strong><small>de {professorUsage.dailyCallLimit}</small></div>
               <div><strong>Perguntas usadas hoje</strong><span>O limite diário reinicia automaticamente.</span></div>
             </div>}
-            {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p>{professorUserId && <button type="button" className="clear-history" onClick={() => { clearConversation(professorUserId); setLiveAnswer(''); setQuery(''); setProfessorState({ kind: 'idle' }) }}>Apagar histórico deste navegador</button>}</article>}
+            {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><div className="live-answer-content"><Suspense fallback={<p>Formatando resposta…</p>}><ProfessorAnswer>{liveAnswer}</ProfessorAnswer></Suspense></div>{professorUserId && <button type="button" className="clear-history" onClick={() => { clearConversation(professorUserId); setLiveAnswer(''); setQuery(''); setProfessorState({ kind: 'idle' }) }}>Apagar histórico deste navegador</button>}</article>}
           </div>
           <p className="hero-test-note"><Sparkles size={14} /> {isProfessorEnabled ? 'A resposta real exige login por e-mail e fica salva somente neste navegador.' : 'Este preview não substitui erros por respostas simuladas.'}</p>
         </div>
@@ -543,7 +544,7 @@ function App() {
       </section>
 
       <section className="launch-section">
-        <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quando o Professor estiver disponível, você quer continuar a conversa?</h2></div><button className="button button-light" onClick={() => setModal('checkout')}>Quero receber a condição de lançamento <ArrowRight size={18} /></button></div>
+        <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quer acompanhar a evolução do Professor IA e do AçõesJá?</h2></div><button className="button button-light" onClick={() => setModal('checkout')}>Quero acompanhar as novidades <ArrowRight size={18} /></button></div>
       </section>
 
       <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos">Termos de Uso</a><a href="https://www.acoesja.com.br/privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
