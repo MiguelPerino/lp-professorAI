@@ -45,11 +45,9 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
-          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
         run: |
           test -n "$VITE_SUPABASE_URL" || { echo "::error::Configure a variável VITE_SUPABASE_URL"; exit 1; }
           test -n "$VITE_SUPABASE_PUBLISHABLE_KEY" || { echo "::error::Configure a variável VITE_SUPABASE_PUBLISHABLE_KEY"; exit 1; }
-          test -n "$VITE_SERVER_URL" || { echo "::error::Configure a variável VITE_SERVER_URL"; exit 1; }
 
       - name: Gerar versão estática
         run: pnpm --filter @acoesja/web exec vite build --base=/${{ github.event.repository.name }}/
@@ -58,7 +56,8 @@ jobs:
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ vars.VITE_SUPABASE_PUBLISHABLE_KEY }}
           VITE_POSTHOG_KEY: ${{ vars.VITE_POSTHOG_KEY }}
           VITE_POSTHOG_HOST: ${{ vars.VITE_POSTHOG_HOST }}
-          VITE_SERVER_URL: ${{ vars.VITE_SERVER_URL }}
+          VITE_ACOESJA_API_BASE: https://api.acoesja.com.br/api
+          VITE_PROFESSOR_REAL_ENABLED: "false"
 
       - name: Preparar fallback das rotas da aplicação
         run: cp web/dist/index.html web/dist/404.html

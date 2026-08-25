@@ -1,14 +1,7 @@
 import { config } from './config'
 
-const distinctIdKey = 'acoesja_distinct_id'
-
-function getDistinctId() {
-  const existing = localStorage.getItem(distinctIdKey)
-  if (existing) return existing
-  const id = crypto.randomUUID()
-  localStorage.setItem(distinctIdKey, id)
-  return id
-}
+// Efêmero por carregamento: a LP não cria nem persiste identidade local.
+const anonymousPageId = crypto.randomUUID()
 
 export function track(event: string, properties: Record<string, unknown> = {}) {
   if (!config.posthogKey) return
@@ -20,13 +13,7 @@ export function track(event: string, properties: Record<string, unknown> = {}) {
     body: JSON.stringify({
       api_key: config.posthogKey,
       event,
-      properties: { distinct_id: getDistinctId(), ...properties },
+      properties: { distinct_id: anonymousPageId, ...properties },
     }),
   }).catch(() => undefined)
-}
-
-export function identify(userId: string, properties: Record<string, unknown> = {}) {
-  if (!config.posthogKey) return
-  localStorage.setItem(distinctIdKey, userId)
-  track('$identify', { $set: properties })
 }

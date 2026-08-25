@@ -7,6 +7,7 @@
     "dev": "corepack pnpm --parallel --filter @acoesja/web --filter @acoesja/server dev",
     "dev:web": "corepack pnpm --filter @acoesja/web dev",
     "dev:server": "corepack pnpm --filter @acoesja/server dev",
+    "test": "corepack pnpm --filter @acoesja/web test",
     "build": "corepack pnpm --filter @acoesja/web build && corepack pnpm --filter @acoesja/server build"
   }
 }
