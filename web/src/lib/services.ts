@@ -36,28 +36,30 @@ export async function initializeProfessorAuth(): Promise<boolean> {
   return Boolean(data.session?.access_token)
 }
 
-export function onProfessorAuthChange(onChange: (signedIn: boolean) => void): () => void {
-  if (!isOfficialProfessorEnabled || !isSupabaseConfigured) return () => undefined
-  const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
-    onChange(Boolean(session?.access_token))
-  })
-  return () => data.subscription.unsubscribe()
-}
-
 export async function hasProfessorSession(): Promise<boolean> {
   const { data, error } = await getSupabase().auth.getSession()
   if (error) throw error
   return Boolean(data.session?.access_token)
 }
 
-export async function sendProfessorLoginLink(email: string): Promise<void> {
+export async function sendProfessorOtp(email: string): Promise<void> {
   const normalizedEmail = email.trim().toLowerCase()
   if (!normalizedEmail) fail('Informe seu e-mail para entrar.')
   const { error } = await getSupabase().auth.signInWithOtp({
     email: normalizedEmail,
-    options: { emailRedirectTo: `${window.location.origin}${window.location.pathname}` },
   })
   if (error) throw error
+}
+
+export async function verifyProfessorOtp(email: string, token: string): Promise<void> {
+  const normalizedEmail = email.trim().toLowerCase()
+  const { data, error } = await getSupabase().auth.verifyOtp({
+    email: normalizedEmail,
+    token,
+    type: 'email',
+  })
+  if (error) throw error
+  if (!data.session?.access_token) fail('O código foi aceito, mas não foi possível iniciar sua sessão.')
 }
 
 export async function joinWaitlist(input: { name: string; email: string; whatsapp: string; marketingConsent: boolean }) {

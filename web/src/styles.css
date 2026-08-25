@@ -41,9 +41,9 @@ body{overflow-x:hidden}.modal-backdrop{overflow:hidden}.modal{max-height:calc(10
 @media(max-width:360px){.container{width:calc(100% - 24px)}.notice{padding-inline:12px}.header{margin-inline:12px;width:calc(100% - 24px)}.hero-professor-panel{padding:12px}.question-box.hero-question-box{padding:12px}.context-summary{display:block}.context-summary span{display:block;margin-top:3px}.usage-absolute{grid-template-columns:1fr}.footer{width:calc(100% - 24px)}}
 @media(max-height:700px){.modal{padding-block:26px}.hero{min-height:0}.hero-question-box .live-answer{max-height:none}}
 
-/* Login por magic link do Professor IA */
-.professor-action button{justify-content:center;padding:9px 11px;border-radius:6px;background:var(--brand-primary);color:#fff}.professor-login-form{display:flex;gap:7px}.professor-login-form input{min-width:0;flex:1;padding:9px 10px;border:1px solid #d3cbed;border-radius:6px;background:#fff;color:var(--ink);font-size:11px}.professor-login-form button:disabled{cursor:not-allowed;opacity:.65}.professor-action>.form-error{margin-top:8px!important}
-@media(max-width:420px){.professor-login-form{align-items:stretch;flex-direction:column}.professor-login-form button{width:100%}}
+/* Login por código OTP do Professor IA */
+.professor-otp-email{display:block;margin-top:4px;color:var(--ink-soft);font-weight:800}.modal .professor-otp-input{text-align:center;font:700 24px 'DM Mono';letter-spacing:.35em;padding-left:calc(12px + .35em)}.professor-otp-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:16px}.professor-otp-actions button{padding:0;border:0;background:transparent;color:var(--brand-primary);font-size:10px;font-weight:800}.professor-otp-actions button:disabled{cursor:not-allowed;color:#9891a4}.professor-login-modal>.form-error{margin-top:14px!important}
+@media(max-width:420px){.professor-otp-actions{align-items:flex-start;flex-direction:column}}
 
 /* Ênfase da proposta e modal de autenticação */
-.product-label{font-size:12px;line-height:1.35}.hero-professor-intro>span{font-size:11px;font-weight:700}.professor-success{padding:8px 10px;border-radius:6px;background:#edf8f0;color:#27713f}.professor-login-modal h2{max-width:350px}.professor-login-modal form{margin-top:4px}.professor-login-modal .submitted{padding-top:2px}.professor-login-modal .submitted .button{color:#fff}
+.product-label{font-size:12px;line-height:1.35}.hero-professor-intro>span{font-size:11px;font-weight:700}.professor-success{padding:8px 10px;border-radius:6px;background:#edf8f0;color:#27713f}.professor-login-modal h2{max-width:350px}.professor-login-modal form{margin-top:4px}.professor-login-modal .submitted{padding-top:2px}
