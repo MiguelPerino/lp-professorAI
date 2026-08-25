@@ -1,8 +1,5 @@
 export const config = {
   acoesJaApiBase: (import.meta.env.VITE_ACOESJA_API_BASE?.trim() || '').replace(/\/$/, ''),
-  acoesJaLoginUrl: import.meta.env.VITE_ACOESJA_LOGIN_URL?.trim() ?? '',
-  acoesJaPoliciesUrl: import.meta.env.VITE_ACOESJA_POLICIES_URL?.trim() ?? '',
-  acoesJaRefreshPath: import.meta.env.VITE_ACOESJA_REFRESH_PATH?.trim() ?? '',
   professorRealEnabled: import.meta.env.VITE_PROFESSOR_REAL_ENABLED === 'true',
   posthogKey: import.meta.env.VITE_POSTHOG_KEY?.trim() ?? '',
   posthogHost: (import.meta.env.VITE_POSTHOG_HOST?.trim() || 'https://us.i.posthog.com').replace(/\/$/, ''),

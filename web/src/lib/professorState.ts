@@ -18,7 +18,7 @@ export function professorErrorState(reason: unknown): ProfessorState {
     return { kind: 'error', message: 'Não foi possível concluir sua pergunta. Tente novamente.' }
   }
   if (reason.status === 401 || reason.code === 'LOGIN_REQUIRED') {
-    return { kind: 'login', message: 'Entre pelo AçõesJá para enviar esta pergunta ao Professor.' }
+    return { kind: 'login', message: 'Entre com seu e-mail para enviar esta pergunta ao Professor.' }
   }
   if (reason.code === 'POLICIES_NOT_ACCEPTED') {
     return { kind: 'policies', message: 'Aceite as políticas oficiais do AçõesJá antes de continuar.' }

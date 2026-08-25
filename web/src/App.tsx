@@ -16,10 +16,9 @@ import brandLogo from '../../design/Logo preta.jpeg'
 import brandIcon from '../../design/Logo Ícone preto.png'
 import { track } from './lib/analytics'
 import { isGitHubPagesPreview, isOfficialProfessorEnabled } from './lib/config'
-import type { ProfessorUsage } from './lib/officialApi'
 import { professorErrorState } from './lib/professorState'
 import type { ProfessorState } from './lib/professorState'
-import { askProfessor, getCurrentCycleUsage, joinWaitlist, openOfficialPolicies, startOfficialLogin } from './lib/services'
+import { askProfessor, hasProfessorSession, joinWaitlist, sendProfessorLoginLink } from './lib/services'
 
 type ModalKind = 'checkout' | 'terms' | 'privacy' | null
 
@@ -165,7 +164,10 @@ function App() {
   const [menuOpen, setMenuOpen] = useState(false)
   const [liveAnswer, setLiveAnswer] = useState('')
   const [professorState, setProfessorState] = useState<ProfessorState>({ kind: 'idle' })
-  const [usage, setUsage] = useState<ProfessorUsage | null>(null)
+  const [loginEmail, setLoginEmail] = useState('')
+  const [loginLoading, setLoginLoading] = useState(false)
+  const [loginSent, setLoginSent] = useState(false)
+  const [loginError, setLoginError] = useState('')
 
   const openProfessor = () => {
     document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -181,7 +183,6 @@ function App() {
     const question = query.trim()
     if (!question) return
     setLiveAnswer('')
-    setUsage(null)
     track('professor_question_started', { question_length: question.length })
     if (!isOfficialProfessorEnabled) {
       setProfessorState({
@@ -194,13 +195,15 @@ function App() {
     }
     try {
       setProfessorState({ kind: 'checking-session' })
-      await getCurrentCycleUsage()
+      if (!await hasProfessorSession()) {
+        setProfessorState({ kind: 'login', message: 'Entre com seu e-mail para enviar esta pergunta.' })
+        return
+      }
       setProfessorState({ kind: 'asking' })
       const response = await askProfessor({ message: question, contextItems: [] })
       setLiveAnswer(response.message)
-      setUsage(response.usage)
       setProfessorState({ kind: 'answered' })
-      track('professor_question_answered', { provider: response.provider, model: response.model })
+      track('professor_question_answered', { conversation_id: response.conversationId })
     } catch (reason) {
       const state = professorErrorState(reason)
       setProfessorState(state)
@@ -208,12 +211,20 @@ function App() {
     }
   }
 
-  const handleOfficialAction = (action: 'login' | 'policies') => {
+  const sendLoginLink = async () => {
+    if (!loginEmail.trim()) {
+      setLoginError('Informe seu e-mail para receber o link de acesso.')
+      return
+    }
+    setLoginLoading(true)
+    setLoginError('')
     try {
-      if (action === 'login') startOfficialLogin()
-      else openOfficialPolicies()
+      await sendProfessorLoginLink(loginEmail)
+      setLoginSent(true)
     } catch (reason) {
-      setProfessorState({ kind: 'error', message: reason instanceof Error ? reason.message : 'A URL oficial não está configurada.' })
+      setLoginError(reason instanceof Error ? reason.message : 'Não foi possível enviar o link de acesso.')
+    } finally {
+      setLoginLoading(false)
     }
   }
 
@@ -260,7 +271,7 @@ function App() {
             <p>Pergunte do seu jeito. Se houver contexto selecionado no AçõesJá, a interface mostra exatamente quais itens serão enviados.</p>
           </div>
           <div className="question-box hero-question-box">
-            <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {isOfficialProfessorEnabled ? 'login oficial ao enviar' : 'preview sem sessão real'}</small></div>
+            <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {isOfficialProfessorEnabled ? 'login por e-mail ao enviar' : 'preview sem sessão real'}</small></div>
             <label className="sr-only" htmlFor="hero-question">Sua pergunta</label>
             <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa X teve lucro. Por que a ação dela caiu?" maxLength={280} />
             <div className="question-suggestions" aria-label="Sugestões de perguntas">
@@ -271,12 +282,18 @@ function App() {
             {professorState.kind === 'checking-session' && <p className="professor-status" role="status">Verificando sua sessão oficial antes de enviar a pergunta…</p>}
             {professorState.kind === 'asking' && <p className="professor-status" role="status">O Professor está analisando sua pergunta…</p>}
             {['context-too-large', 'limited', 'provider-unavailable', 'error', 'preview-only'].includes(professorState.kind) && 'message' in professorState && <p className={`form-error question-error state-${professorState.kind}`} role="alert">{professorState.message}</p>}
-            {professorState.kind === 'login' && <div className="professor-action" role="alert"><p>{professorState.message}</p><button type="button" onClick={() => handleOfficialAction('login')}>Entrar pelo AçõesJá <ArrowRight size={15} /></button></div>}
-            {professorState.kind === 'policies' && <div className="professor-action" role="alert"><p>{professorState.message}</p><button type="button" onClick={() => handleOfficialAction('policies')}>Revisar políticas oficiais <ArrowRight size={15} /></button></div>}
+            {professorState.kind === 'login' && <div className="professor-action" role="region" aria-label="Login do Professor IA">
+              <p>{loginSent ? 'Enviamos um link de acesso. Abra seu e-mail e volte por esse link para continuar.' : professorState.message}</p>
+              {!loginSent && <div className="professor-login-form">
+                <label className="sr-only" htmlFor="professor-login-email">Seu e-mail</label>
+                <input id="professor-login-email" type="email" value={loginEmail} onChange={(event) => { setLoginEmail(event.target.value); setLoginError('') }} onKeyDown={(event) => { if (event.key === 'Enter') void sendLoginLink() }} placeholder="voce@exemplo.com" autoComplete="email" />
+                <button type="button" disabled={loginLoading} onClick={sendLoginLink}>{loginLoading ? 'Enviando…' : 'Receber link de acesso'} <ArrowRight size={15} /></button>
+              </div>}
+              {loginError && <p className="form-error" role="alert">{loginError}</p>}
+            </div>}
             {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
-            {usage && <dl className="usage-absolute" aria-label="Consumo absoluto desta resposta"><div><dt>Entrada</dt><dd>{usage.inputTokens} tokens</dd></div><div><dt>Cache</dt><dd>{usage.cachedInputTokens} tokens</dd></div><div><dt>Saída</dt><dd>{usage.outputTokens} tokens</dd></div></dl>}
           </div>
-          <p className="hero-test-note"><Sparkles size={14} /> {isOfficialProfessorEnabled ? 'A resposta real exige sua sessão oficial do AçõesJá.' : 'Este preview não chama provider e não substitui erros por respostas simuladas.'}</p>
+          <p className="hero-test-note"><Sparkles size={14} /> {isOfficialProfessorEnabled ? 'A resposta real exige login por e-mail.' : 'Este preview não chama provider e não substitui erros por respostas simuladas.'}</p>
         </div>
       </section>
 
