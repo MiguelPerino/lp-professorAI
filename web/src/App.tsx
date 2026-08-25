@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { type CSSProperties, useCallback, useEffect, useRef, useState } from 'react'
 import {
   ArrowDownRight,
   ArrowRight,
@@ -15,12 +15,14 @@ import {
 import brandLogo from '../../design/Logo preta.jpeg'
 import brandIcon from '../../design/Logo Ícone preto.png'
 import { track } from './lib/analytics'
-import { isGitHubPagesPreview, isOfficialProfessorEnabled } from './lib/config'
+import { isProfessorEnabled } from './lib/config'
+import { appendConversation, clearConversation, loadConversation } from './lib/conversationStore'
+import type { ProfessorUsage } from './lib/professorApi'
 import { professorErrorState } from './lib/professorState'
 import type { ProfessorState } from './lib/professorState'
-import { askProfessor, hasProfessorSession, initializeProfessorAuth, joinWaitlist, sendProfessorOtp, verifyProfessorOtp } from './lib/services'
+import { askProfessor, getProfessorUsage, getProfessorUserId, hasProfessorSession, initializeProfessorAuth, joinWaitlist, sendProfessorOtp, verifyProfessorOtp } from './lib/services'
 
-type ModalKind = 'checkout' | 'terms' | 'privacy' | null
+type ModalKind = 'checkout' | null
 const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
 const PROFESSOR_OTP_LENGTH = 8
 
@@ -44,41 +46,41 @@ const responses: Record<string, string> = {
 
 const flowSteps = [
   {
-    title: 'Escolha a ação',
-    summary: 'Você seleciona a empresa que quer entender.',
-    explanationTitle: 'A análise começa em uma ação específica.',
-    explanation: 'Escolha a ação que você quer analisar. A partir daí, o Professor sabe qual empresa, setor e momento do mercado devem orientar a conversa.',
+    title: 'Sua dúvida',
+    summary: 'Você escreve o que quer compreender.',
+    explanationTitle: 'O aprendizado começa pela sua pergunta.',
+    explanation: 'Conte o conceito, indicador ou situação que quer compreender. Não é necessário dominar termos técnicos para começar.',
   },
   {
-    title: 'Dados atuais',
-    summary: 'Métricas e acontecimentos entram no contexto.',
-    explanationTitle: 'Os números da ação dão base à resposta.',
-    explanation: 'P/L, ROE, dívida, margens, resultados e dados atualizados ajudam o Professor a responder sobre a situação real daquela empresa — não sobre um exemplo genérico.',
-  },
-  {
-    title: 'Sua pergunta',
-    summary: 'Pergunte sobre a métrica que chamou atenção.',
-    explanationTitle: 'Você pergunta do seu jeito.',
-    explanation: 'Você pode perguntar sobre P/L, dívida, resultados ou qualquer dado que chamou sua atenção. Não é necessário dominar termos técnicos; basta contar o que quer compreender.',
+    title: 'Conceitos',
+    summary: 'O Professor identifica as ideias envolvidas.',
+    explanationTitle: 'A dúvida é conectada aos conceitos necessários.',
+    explanation: 'O Professor separa os conceitos relevantes e explica como eles se relacionam, sem pressupor conhecimento prévio.',
   },
   {
     title: 'Explicação',
-    summary: 'O Professor conecta a métrica à empresa.',
-    explanationTitle: 'A resposta considera o contexto escolhido.',
-    explanation: 'O Professor traduz o indicador e explica o que ele pode representar naquele ativo, considerando histórico, setor e momento da empresa.',
+    summary: 'A resposta usa linguagem clara e educacional.',
+    explanationTitle: 'O Professor explica sem transformar educação em recomendação.',
+    explanation: 'A resposta apresenta raciocínio e limitações, sem indicar compra, venda, preço-alvo ou alocação pessoal.',
+  },
+  {
+    title: 'Comparação',
+    summary: 'Você descobre o que observar em conjunto.',
+    explanationTitle: 'Um número isolado vira uma investigação mais completa.',
+    explanation: 'Quando fizer sentido, a resposta sugere períodos, indicadores ou cenários que ajudam a testar a interpretação.',
   },
   {
     title: 'Próximo passo',
-    summary: 'Você descobre o que comparar e investigar.',
+    summary: 'Você recebe uma nova pergunta para avançar.',
     explanationTitle: 'A explicação vira um caminho de análise.',
-    explanation: 'Além de responder, o Professor mostra quais métricas, períodos e empresas podem ser comparados para você continuar investigando com clareza.',
+    explanation: 'Além de responder, o Professor propõe um próximo passo de estudo para você continuar aprendendo de forma ativa.',
   },
 ]
 
 function Logo() {
   return (
-    <a className="brand" href="#inicio" aria-label="AçõesJA, início">
-      <img src={brandLogo} alt="AçõesJA" />
+    <a className="brand" href="#inicio" aria-label="AçõesJá, início">
+      <img src={brandLogo} alt="AçõesJá" />
     </a>
   )
 }
@@ -87,7 +89,7 @@ function ProfessorAvatar({ small = false }: { small?: boolean }) {
   return <img className={small ? 'prof-avatar small' : 'prof-avatar'} src={brandIcon} alt="" />
 }
 
-function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () => void }) {
+function Modal({ onClose }: { onClose: () => void }) {
   const dialogRef = useRef<HTMLElement>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -96,11 +98,7 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
   const [name, setName] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [marketingConsent, setMarketingConsent] = useState(false)
-  const details = useMemo(() => {
-    if (kind === 'terms') return { eyebrow: 'AçõesJA', title: 'Termos de Uso', text: 'O texto oficial dos Termos de Uso será inserido aqui antes da publicação. Neste protótipo, este modal valida apenas a experiência de leitura sem abrir uma nova página.' }
-    if (kind === 'privacy') return { eyebrow: 'AçõesJA', title: 'Política de Privacidade', text: 'O texto oficial da Política de Privacidade será inserido antes da publicação. No preview, perguntas não são enviadas; dados submetidos à lista de lançamento seguem o fluxo existente dessa lista.' }
-    return { eyebrow: 'Professor IA', title: 'O lançamento ainda não está aberto.', text: 'Entre na lista para receber uma condição especial quando o Professor estiver disponível.' }
-  }, [kind])
+  const details = { eyebrow: 'Professor IA', title: 'O lançamento ainda não está aberto.', text: 'Entre na lista para receber uma condição especial quando o Professor estiver disponível.' }
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
@@ -141,7 +139,7 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
           <span className="eyebrow">{details.eyebrow}</span>
         <h2 id="modal-title">{details.title}</h2>
         <p>{details.text}</p>
-        {kind === 'checkout' && !submitted && <>
+        {!submitted && <>
           <label className="field-label" htmlFor="lead-name">Como podemos chamar você? <span>opcional</span></label>
           <input id="lead-name" type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome" />
           <label className="field-label" htmlFor="lead-email">Seu melhor e-mail</label>
@@ -237,6 +235,8 @@ function App() {
   const [activeFlowStep, setActiveFlowStep] = useState(0)
   const [menuOpen, setMenuOpen] = useState(false)
   const [liveAnswer, setLiveAnswer] = useState('')
+  const [professorUsage, setProfessorUsage] = useState<ProfessorUsage | null>(null)
+  const [professorUserId, setProfessorUserId] = useState<string | null>(null)
   const [professorState, setProfessorState] = useState<ProfessorState>({ kind: 'idle' })
   const [loginEmail, setLoginEmail] = useState('')
   const [loginCode, setLoginCode] = useState('')
@@ -268,15 +268,37 @@ function App() {
     }
   }, [])
 
+  const restoreLocalConversation = useCallback((userId: string) => {
+    const lastEntry = loadConversation(userId).at(-1)
+    if (!lastEntry) return
+    setQuery(lastEntry.question)
+    setLiveAnswer(lastEntry.answer)
+    setProfessorState({ kind: 'answered' })
+  }, [])
+
+  const refreshUsage = useCallback(async () => {
+    try {
+      setProfessorUsage(await getProfessorUsage())
+    } catch {
+      setProfessorUsage(null)
+    }
+  }, [])
+
   useEffect(() => {
     let active = true
-    void initializeProfessorAuth().then((signedIn) => {
-      if (active && signedIn) restorePendingQuestion()
+    void initializeProfessorAuth().then(async (signedIn) => {
+      if (!active || !signedIn) return
+      const userId = await getProfessorUserId()
+      if (!active || !userId) return
+      setProfessorUserId(userId)
+      restoreLocalConversation(userId)
+      restorePendingQuestion()
+      await refreshUsage()
     }).catch(() => {
       if (active) setProfessorState({ kind: 'error', message: 'Não foi possível restaurar sua sessão. Solicite um novo código de acesso.' })
     })
     return () => { active = false }
-  }, [restorePendingQuestion])
+  }, [refreshUsage, restoreLocalConversation, restorePendingQuestion])
 
   useEffect(() => {
     if (resendCooldown <= 0) return
@@ -300,12 +322,10 @@ function App() {
     setLoginConfirmed(false)
     setLiveAnswer('')
     track('professor_question_started', { question_length: question.length })
-    if (!isOfficialProfessorEnabled) {
+    if (!isProfessorEnabled) {
       setProfessorState({
         kind: 'preview-only',
-        message: isGitHubPagesPreview
-          ? 'Este GitHub Pages é somente uma demonstração simulada. Cookies de sessão cross-site não são usados.'
-          : 'A integração real está preparada, mas permanece desativada até autorização do provider e do ambiente oficial.',
+        message: 'A autenticação ainda não foi configurada neste ambiente. Nenhuma resposta simulada será usada.',
       })
       return
     }
@@ -320,10 +340,17 @@ function App() {
         return
       }
       setProfessorState({ kind: 'asking' })
-      const response = await askProfessor({ message: question, contextItems: [] })
+      const conversationId = crypto.randomUUID()
+      const response = await askProfessor({ message: question, conversationId })
       setLiveAnswer(response.message)
       setProfessorState({ kind: 'answered' })
-      track('professor_question_answered', { conversation_id: response.conversationId })
+      const userId = await getProfessorUserId()
+      if (userId) {
+        setProfessorUserId(userId)
+        appendConversation(userId, question, response.message)
+      }
+      void refreshUsage()
+      track('professor_question_answered', { conversation_id: conversationId })
     } catch (reason) {
       const state = professorErrorState(reason)
       if (state.kind === 'login') {
@@ -412,7 +439,7 @@ function App() {
 
   return (
     <main id="inicio">
-      <div className="notice"><span>{isOfficialProfessorEnabled ? 'Professor IA pronto para ajudar' : 'Demonstração simulada · integração real desativada'}</span><a href="#perguntar">Faça sua primeira pergunta <ArrowRight size={14} /></a></div>
+      <div className="notice"><span>{isProfessorEnabled ? 'Professor IA pronto para ajudar' : 'Demonstração simulada · integração indisponível'}</span><a href="#perguntar">Faça sua primeira pergunta <ArrowRight size={14} /></a></div>
       <header className="header container">
         <Logo />
         <nav id="primary-navigation" className={menuOpen ? 'nav open' : 'nav'} aria-label="Navegação principal">
@@ -426,13 +453,13 @@ function App() {
       <section className="hero container" id="perguntar">
         <div className="hero-copy">
           <div className="product-label"><span className="pulse-dot" /> Entenda o que é e como funciona o Professor IA</div>
-          <p className="hero-product">Seu guia educacional dentro do AçõesJA.</p>
-          <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
-          <p>Faça perguntas sobre ações, indicadores e resultados. O Professor IA transforma conceitos do mercado em explicações claras para apoiar seu aprendizado.</p>
+          <p className="hero-product">Seu guia educacional do ecossistema AçõesJá.</p>
+          <h1>Faça uma pergunta. Entenda investimentos <em>sem respostas prontas.</em></h1>
+          <p>Converse sobre ações, indicadores e conceitos do mercado. O Professor IA transforma dúvidas em explicações claras para apoiar seu aprendizado.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
-            <div><span>01</span><p><strong>Escolha uma ação</strong> que você quer entender melhor.</p></div>
-            <div><span>02</span><p><strong>Pergunte sobre os dados</strong> que chamaram sua atenção.</p></div>
-            <div><span>03</span><p><strong>Receba uma explicação</strong> baseada naquele ativo.</p></div>
+            <div><span>01</span><p><strong>Escreva sua dúvida</strong> do seu jeito.</p></div>
+            <div><span>02</span><p><strong>Entenda os conceitos</strong> envolvidos no raciocínio.</p></div>
+            <div><span>03</span><p><strong>Receba um próximo passo</strong> para continuar estudando.</p></div>
           </div>
           <div className="hero-actions">
             <a className="button button-primary" href="#demonstracao">Ver demonstração <ArrowDownRight size={18} /></a>
@@ -442,8 +469,8 @@ function App() {
         </div>
         <div className="hero-professor-panel" aria-label="Teste o Professor IA">
           <div className="hero-professor-head">
-            <div><ProfessorAvatar /><div><strong>Professor IA</strong><small>{isOfficialProfessorEnabled && <i />} {isOfficialProfessorEnabled ? 'pronto para te ajudar' : 'preview sem provider'}</small></div></div>
-            <span>{isOfficialProfessorEnabled ? 'Acesso oficial' : 'Demonstração simulada'}</span>
+            <div><ProfessorAvatar /><div><strong>Professor IA</strong><small>{isProfessorEnabled && <i />} {isProfessorEnabled ? 'pronto para te ajudar' : 'integração indisponível'}</small></div></div>
+            <span>{isProfessorEnabled ? 'Acesso por e-mail' : 'Demonstração simulada'}</span>
           </div>
           <div className="hero-professor-intro">
             <span>ENTENDA O QUE É E COMO FUNCIONA</span>
@@ -451,7 +478,7 @@ function App() {
             <p>Pergunte do seu jeito. O Professor IA explica conceitos, indicadores e resultados com linguagem clara e foco educacional.</p>
           </div>
           <div className="question-box hero-question-box">
-            <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {isOfficialProfessorEnabled ? 'login por e-mail ao enviar' : 'preview sem sessão real'}</small></div>
+            <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {isProfessorEnabled ? 'login por e-mail ao enviar' : 'preview sem sessão real'}</small></div>
             <label className="sr-only" htmlFor="hero-question">Sua pergunta</label>
             <textarea id="hero-question" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Ex.: A empresa X teve lucro. Por que a ação dela caiu?" maxLength={280} />
             <div className="question-suggestions" aria-label="Sugestões de perguntas">
@@ -462,21 +489,25 @@ function App() {
             {professorState.kind === 'checking-session' && <p className="professor-status" role="status">Verificando sua sessão oficial antes de enviar a pergunta…</p>}
             {professorState.kind === 'asking' && <p className="professor-status" role="status">O Professor está analisando sua pergunta…</p>}
             {['context-too-large', 'limited', 'provider-unavailable', 'error', 'preview-only'].includes(professorState.kind) && 'message' in professorState && <p className={`form-error question-error state-${professorState.kind}`} role="alert">{professorState.message}</p>}
-            {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
+            {professorUsage && <div className="professor-usage" role="status" aria-label={`${professorUsage.callsToday} de ${professorUsage.dailyCallLimit} perguntas usadas hoje`}>
+              <div className="usage-ring" style={{ '--usage-percent': `${Math.min(100, Math.round((professorUsage.callsToday / Math.max(1, professorUsage.dailyCallLimit)) * 100))}%` } as CSSProperties}><strong>{professorUsage.callsToday}</strong><small>de {professorUsage.dailyCallLimit}</small></div>
+              <div><strong>Perguntas usadas hoje</strong><span>O limite diário reinicia automaticamente.</span></div>
+            </div>}
+            {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p>{professorUserId && <button type="button" className="clear-history" onClick={() => { clearConversation(professorUserId); setLiveAnswer(''); setQuery(''); setProfessorState({ kind: 'idle' }) }}>Apagar histórico deste navegador</button>}</article>}
           </div>
-          <p className="hero-test-note"><Sparkles size={14} /> {isOfficialProfessorEnabled ? 'A resposta real exige login por e-mail.' : 'Este preview não chama provider e não substitui erros por respostas simuladas.'}</p>
+          <p className="hero-test-note"><Sparkles size={14} /> {isProfessorEnabled ? 'A resposta real exige login por e-mail e fica salva somente neste navegador.' : 'Este preview não substitui erros por respostas simuladas.'}</p>
         </div>
       </section>
 
       <section className="context-section container" id="como-funciona">
         <div><span className="eyebrow">Como o Professor ajuda</span><h2>Da ação escolhida à explicação que faz sentido.</h2></div>
-        <p>O Professor parte dos dados da empresa selecionada para explicar a métrica no contexto daquele ativo e indicar o que vale investigar depois.</p>
-        <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJA">
-          <div><span>O ecossistema</span><strong>AçõesJA</strong></div>
+          <p>O Professor parte da sua pergunta para explicar conceitos, relações e limitações, indicando o que vale investigar depois.</p>
+        <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJá">
+          <div><span>O ecossistema</span><strong>AçõesJá</strong></div>
           <ArrowDownRight size={18} />
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
-        <div className="flow" aria-label="Ação escolhida leva a dados atuais, pergunta, explicação e próximo passo">
+        <div className="flow" aria-label="Dúvida leva a conceitos, explicação, comparação e próximo passo">
           {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item${activeFlowStep === index ? ' active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
         <article className="flow-explainer" aria-live="polite">
@@ -515,8 +546,8 @@ function App() {
         <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quando o Professor estiver disponível, você quer continuar a conversa?</h2></div><button className="button button-light" onClick={() => setModal('checkout')}>Quero receber a condição de lançamento <ArrowRight size={18} /></button></div>
       </section>
 
-      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJA. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJA</span></div></footer>
-      {modal && <Modal kind={modal} onClose={() => setModal(null)} />}
+      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos">Termos de Uso</a><a href="https://www.acoesja.com.br/privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
+      {modal && <Modal onClose={() => setModal(null)} />}
       {loginOpen && <ProfessorLoginModal code={loginCode} cooldown={resendCooldown} email={loginEmail} error={loginError} resending={otpResending} sending={otpSending} step={loginStep} verifying={otpVerifying} onBack={changeLoginEmail} onChangeCode={(code) => { setLoginCode(code); setLoginError('') }} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onResend={resendOtp} onSubmitEmail={sendOtp} onVerify={verifyOtp} />}
     </main>
   )

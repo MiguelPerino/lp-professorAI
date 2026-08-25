@@ -1,17 +1,21 @@
-# AçõesJA — Professor IA
+# AçõesJá — Professor IA
 
-Landing page React/Vite conectada ao BFF do Professor IA com autenticação Supabase por código OTP enviado por e-mail.
+Landing page React/Vite desacoplada, com autenticação Supabase por código OTP e
+chamada bearer direta ao backend AçõesJá.
 
 ## Estrutura
 
 ```text
-web/       landing page, login Supabase e adapter do BFF
-server/    BFF do Professor IA para Node.js/Vercel
-supabase/  autenticação, persistência, limite diário e lista de lançamento
+web/       landing page, login Supabase, API direta e histórico local
+supabase/  bootstrap da lista de lançamento; Auth é gerenciado pelo Supabase
+server/    stub 410 temporário para o projeto Vercel antigo
 design/    ativos e referências da marca
 ```
 
-O chat exige uma sessão Supabase. O frontend envia o access token somente no cabeçalho `Authorization` e o BFF valida a sessão antes de reservar cota, chamar o provider e persistir a conversa.
+O chat exige uma sessão Supabase. O frontend envia o access token somente em
+`Authorization` para `api.acoesja.com.br`; o backend valida a sessão, aplica
+guardrails/limites e mede tokens. A conversa fica somente no `localStorage`,
+isolada por `user.id`, e pode ser apagada na interface.
 
 ## Desenvolvimento
 
@@ -32,16 +36,39 @@ pnpm build
 
 ## Integração do Professor
 
-O frontend usa `VITE_ACOESJA_API_BASE` como origem do BFF e chama `POST /v1/professor/ask`. O login envia um OTP de oito dígitos pelo Supabase e valida o código com `verifyOtp`; depois da confirmação, o SDK mantém e renova a sessão no navegador e o adapter envia o access token como Bearer.
+O frontend usa `VITE_PROFESSOR_API_BASE` e chama diretamente:
+
+- `POST /chat` com `{ message, conversationId? }`;
+- `GET /usage/current-cycle` para exibir perguntas usadas no dia.
+
+Ambas usam `credentials: "omit"` e bearer Supabase. Não existem cookies ou CSRF
+do AçõesJá, BFF próprio, service role no navegador ou persistência remota das
+conversas.
+
+O login envia um OTP de oito dígitos pelo Supabase e valida o código com
+`verifyOtp`; depois da confirmação, o SDK mantém e renova a sessão.
 
 No Supabase, o template de e-mail deve exibir `{{ .Token }}`. A geração, expiração e validação do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas um cooldown visual de 60 segundos para reenvio.
 
-No backend, `CORS_ORIGIN` deve conter a origem exata do frontend, sem barra final. O provider configurado em `PROFESSOR_API_URL` deve aceitar o payload documentado em `server/.env.example`.
+O backend AçõesJá mantém allowlist CORS exata para o domínio alvo, Vercel e
+GitHub Pages. Uma falha real nunca é substituída por exemplo simulado.
 
 ## GitHub Pages
 
-`*.github.io` continua tratado como preview simulado mesmo que a flag real seja injetada por engano.
+O workflow pode executar o fluxo real quando as duas variáveis públicas do
+Supabase estiverem configuradas no repositório. Os exemplos visuais continuam
+explicitamente rotulados como demonstração simulada.
 
 ## Segurança
 
-Variáveis `VITE_*` são públicas. Nunca adicione `SUPABASE_SECRET_KEY`, `PROFESSOR_API_KEY` ou qualquer segredo ao projeto `web`; essas variáveis pertencem somente ao projeto `server`.
+Variáveis `VITE_*` são públicas. A LP precisa somente de:
+
+- `VITE_SUPABASE_URL`;
+- `VITE_SUPABASE_PUBLISHABLE_KEY`;
+- `VITE_PROFESSOR_API_BASE` (opcional; possui default produtivo);
+- PostHog opcional.
+
+Nunca adicione `SUPABASE_SECRET_KEY`, service role, chave do LLM ou outro
+segredo ao projeto ou bundle. O antigo projeto Vercel `server` não participa da
+integração e responde somente `410 Gone`. Ele pode ser desconectado/arquivado
+depois de confirmar o novo deploy; então a pasta stub também poderá ser removida.

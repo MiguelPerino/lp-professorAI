@@ -1,4 +1,4 @@
--- Bootstrap inicial do Professor IA | AçõesJa
+-- Bootstrap inicial do Professor IA | AçõesJá
 -- Execute uma vez no SQL Editor do Supabase ou com:
 -- psql "$SUPABASE_DB_URL" -v ON_ERROR_STOP=1 -f supabase/bootstrap.sql
 -- O script é idempotente e não contém credenciais.
@@ -38,37 +38,6 @@ create table if not exists public.launch_waitlist_entries (
 
 create unique index if not exists launch_waitlist_entries_email_key
   on public.launch_waitlist_entries (lower(email));
-
-create table if not exists public.professor_conversations (
-  id uuid primary key default gen_random_uuid(),
-  user_id uuid not null references auth.users(id) on delete cascade,
-  title text,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-create index if not exists professor_conversations_user_created_idx
-  on public.professor_conversations (user_id, created_at desc);
-
-create table if not exists public.professor_messages (
-  id uuid primary key default gen_random_uuid(),
-  conversation_id uuid not null references public.professor_conversations(id) on delete cascade,
-  role text not null check (role in ('user', 'assistant', 'system')),
-  content text not null check (char_length(content) between 1 and 12000),
-  provider_message_id text,
-  created_at timestamptz not null default now()
-);
-
-create index if not exists professor_messages_conversation_created_idx
-  on public.professor_messages (conversation_id, created_at);
-
-create table if not exists public.professor_daily_usage (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  usage_date date not null,
-  question_count integer not null default 0 check (question_count >= 0),
-  updated_at timestamptz not null default now(),
-  primary key (user_id, usage_date)
-);
 
 create or replace function public.set_updated_at()
 returns trigger
@@ -117,10 +86,6 @@ drop trigger if exists launch_waitlist_set_updated_at on public.launch_waitlist_
 create trigger launch_waitlist_set_updated_at before update on public.launch_waitlist_entries
   for each row execute procedure public.set_updated_at();
 
-drop trigger if exists professor_conversations_set_updated_at on public.professor_conversations;
-create trigger professor_conversations_set_updated_at before update on public.professor_conversations
-  for each row execute procedure public.set_updated_at();
-
 -- Entrada pública mínima para a lista de lançamento. A tabela continua privada.
 create or replace function public.join_launch_waitlist(
   p_email text,
@@ -165,48 +130,8 @@ begin
 end;
 $$;
 
--- Apenas o BFF, autenticado com service role, pode consumir e devolver cota.
-create or replace function public.reserve_professor_question(p_user_id uuid, p_limit integer)
-returns boolean
-language plpgsql
-security definer
-set search_path = ''
-as $$
-declare
-  v_count integer;
-begin
-  if p_limit < 1 or p_limit > 1000 then
-    raise exception 'Limite inválido' using errcode = '22023';
-  end if;
-
-  insert into public.professor_daily_usage (user_id, usage_date, question_count)
-  values (p_user_id, (now() at time zone 'utc')::date, 1)
-  on conflict (user_id, usage_date) do update set
-    question_count = public.professor_daily_usage.question_count + 1,
-    updated_at = now()
-  where public.professor_daily_usage.question_count < p_limit
-  returning question_count into v_count;
-
-  return coalesce(v_count <= p_limit, false);
-end;
-$$;
-
-create or replace function public.release_professor_question(p_user_id uuid)
-returns void
-language sql
-security definer
-set search_path = ''
-as $$
-  update public.professor_daily_usage
-  set question_count = greatest(question_count - 1, 0), updated_at = now()
-  where user_id = p_user_id and usage_date = (now() at time zone 'utc')::date;
-$$;
-
 alter table public.profiles enable row level security;
 alter table public.launch_waitlist_entries enable row level security;
-alter table public.professor_conversations enable row level security;
-alter table public.professor_messages enable row level security;
-alter table public.professor_daily_usage enable row level security;
 
 drop policy if exists "profiles can view own data" on public.profiles;
 create policy "profiles can view own data" on public.profiles
@@ -215,13 +140,6 @@ create policy "profiles can view own data" on public.profiles
 drop policy if exists "profiles can update own data" on public.profiles;
 revoke insert, update, delete on table public.profiles from anon, authenticated;
 revoke all on table public.launch_waitlist_entries from anon, authenticated;
-revoke all on table public.professor_daily_usage from anon, authenticated;
-revoke all on table public.professor_conversations from anon, authenticated;
-revoke all on table public.professor_messages from anon, authenticated;
-revoke all on function public.reserve_professor_question(uuid, integer) from public, anon, authenticated;
-revoke all on function public.release_professor_question(uuid) from public, anon, authenticated;
 grant execute on function public.join_launch_waitlist(text, text, text, boolean, jsonb) to anon, authenticated;
-grant execute on function public.reserve_professor_question(uuid, integer) to service_role;
-grant execute on function public.release_professor_question(uuid) to service_role;
 
 commit;
