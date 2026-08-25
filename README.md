@@ -32,7 +32,7 @@ pnpm build
 
 ## Integração do Professor
 
-O frontend usa `VITE_ACOESJA_API_BASE` como origem do BFF e chama `POST /v1/professor/ask`. O login envia um OTP de seis dígitos pelo Supabase e valida o código com `verifyOtp`; depois da confirmação, o SDK mantém e renova a sessão no navegador e o adapter envia o access token como Bearer.
+O frontend usa `VITE_ACOESJA_API_BASE` como origem do BFF e chama `POST /v1/professor/ask`. O login envia um OTP de oito dígitos pelo Supabase e valida o código com `verifyOtp`; depois da confirmação, o SDK mantém e renova a sessão no navegador e o adapter envia o access token como Bearer.
 
 No Supabase, o template de e-mail deve exibir `{{ .Token }}`. A geração, expiração e validação do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas um cooldown visual de 60 segundos para reenvio.
 
