@@ -29,6 +29,21 @@ function getOfficialApi(): OfficialApiAdapter {
   return officialApi
 }
 
+export async function initializeProfessorAuth(): Promise<boolean> {
+  if (!isOfficialProfessorEnabled || !isSupabaseConfigured) return false
+  const { data, error } = await getSupabase().auth.getSession()
+  if (error) throw error
+  return Boolean(data.session?.access_token)
+}
+
+export function onProfessorAuthChange(onChange: (signedIn: boolean) => void): () => void {
+  if (!isOfficialProfessorEnabled || !isSupabaseConfigured) return () => undefined
+  const { data } = getSupabase().auth.onAuthStateChange((_event, session) => {
+    onChange(Boolean(session?.access_token))
+  })
+  return () => data.subscription.unsubscribe()
+}
+
 export async function hasProfessorSession(): Promise<boolean> {
   const { data, error } = await getSupabase().auth.getSession()
   if (error) throw error

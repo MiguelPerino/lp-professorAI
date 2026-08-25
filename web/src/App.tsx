@@ -18,9 +18,10 @@ import { track } from './lib/analytics'
 import { isGitHubPagesPreview, isOfficialProfessorEnabled } from './lib/config'
 import { professorErrorState } from './lib/professorState'
 import type { ProfessorState } from './lib/professorState'
-import { askProfessor, hasProfessorSession, joinWaitlist, sendProfessorLoginLink } from './lib/services'
+import { askProfessor, hasProfessorSession, initializeProfessorAuth, joinWaitlist, onProfessorAuthChange, sendProfessorLoginLink } from './lib/services'
 
 type ModalKind = 'checkout' | 'terms' | 'privacy' | null
+const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
 
 const questions = [
   'A empresa teve lucro. Então por que a ação caiu?',
@@ -75,8 +76,8 @@ const flowSteps = [
 
 function Logo() {
   return (
-    <a className="brand" href="#inicio" aria-label="AçõesJa, início">
-      <img src={brandLogo} alt="AçõesJa" />
+    <a className="brand" href="#inicio" aria-label="AçõesJA, início">
+      <img src={brandLogo} alt="AçõesJA" />
     </a>
   )
 }
@@ -95,8 +96,8 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
   const [whatsapp, setWhatsapp] = useState('')
   const [marketingConsent, setMarketingConsent] = useState(false)
   const details = useMemo(() => {
-    if (kind === 'terms') return { eyebrow: 'AçõesJa', title: 'Termos de Uso', text: 'O texto oficial dos Termos de Uso será inserido aqui antes da publicação. Neste protótipo, este modal valida apenas a experiência de leitura sem abrir uma nova página.' }
-    if (kind === 'privacy') return { eyebrow: 'AçõesJa', title: 'Política de Privacidade', text: 'O texto oficial da Política de Privacidade será inserido antes da publicação. No preview, perguntas não são enviadas; dados submetidos à lista de lançamento seguem o fluxo existente dessa lista.' }
+    if (kind === 'terms') return { eyebrow: 'AçõesJA', title: 'Termos de Uso', text: 'O texto oficial dos Termos de Uso será inserido aqui antes da publicação. Neste protótipo, este modal valida apenas a experiência de leitura sem abrir uma nova página.' }
+    if (kind === 'privacy') return { eyebrow: 'AçõesJA', title: 'Política de Privacidade', text: 'O texto oficial da Política de Privacidade será inserido antes da publicação. No preview, perguntas não são enviadas; dados submetidos à lista de lançamento seguem o fluxo existente dessa lista.' }
     return { eyebrow: 'Professor IA', title: 'O lançamento ainda não está aberto.', text: 'Entre na lista para receber uma condição especial quando o Professor estiver disponível.' }
   }, [kind])
 
@@ -156,6 +157,45 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
   )
 }
 
+type ProfessorLoginModalProps = {
+  email: string
+  error: string
+  loading: boolean
+  sent: boolean
+  onChangeEmail: (email: string) => void
+  onClose: () => void
+  onSubmit: () => void
+}
+
+function ProfessorLoginModal({ email, error, loading, sent, onChangeEmail, onClose, onSubmit }: ProfessorLoginModalProps) {
+  const dialogRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null
+    dialogRef.current?.querySelector<HTMLElement>('input, button')?.focus()
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown); previousFocus?.focus() }
+  }, [onClose])
+
+  return (
+    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+      <section ref={dialogRef} className="modal professor-login-modal" role="dialog" aria-modal="true" aria-labelledby="professor-login-title" onMouseDown={(event) => event.stopPropagation()}>
+        <button className="modal-close" onClick={onClose} aria-label="Fechar login"><X size={20} /></button>
+        <span className="eyebrow">Acesso seguro</span>
+        <h2 id="professor-login-title">Entre para conversar com o Professor IA.</h2>
+        <p>Sua pergunta ficará salva. Enviaremos um link por e-mail e, depois da confirmação, você voltará exatamente para ela.</p>
+        {sent ? <div className="submitted"><span><Check size={22} /></span><h3>Confira seu e-mail.</h3><p>Abra o link “Sign in” para confirmar o acesso e voltar à sua pergunta.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a pergunta</button></div> : <form onSubmit={(event) => { event.preventDefault(); onSubmit() }}>
+          <label className="field-label" htmlFor="professor-login-email">Seu melhor e-mail</label>
+          <input id="professor-login-email" type="email" value={email} onChange={(event) => onChangeEmail(event.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
+          <button className="button button-dark wide" type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Receber link de acesso'} <ArrowRight size={17} /></button>
+        </form>}
+        {error && <p className="form-error" role="alert">{error}</p>}
+      </section>
+    </div>
+  )
+}
+
 function App() {
   const [modal, setModal] = useState<ModalKind>(null)
   const [query, setQuery] = useState('')
@@ -168,6 +208,33 @@ function App() {
   const [loginLoading, setLoginLoading] = useState(false)
   const [loginSent, setLoginSent] = useState(false)
   const [loginError, setLoginError] = useState('')
+  const [loginOpen, setLoginOpen] = useState(false)
+  const [loginConfirmed, setLoginConfirmed] = useState(false)
+
+  useEffect(() => {
+    let active = true
+    const restorePendingQuestion = (signedIn: boolean) => {
+      if (!active || !signedIn) return
+      const pendingQuestion = window.localStorage.getItem(PENDING_PROFESSOR_QUESTION_KEY)
+      setLoginOpen(false)
+      setLoginSent(false)
+      setProfessorState({ kind: 'idle' })
+      if (pendingQuestion) {
+        setLoginConfirmed(true)
+        setQuery(pendingQuestion)
+        window.localStorage.removeItem(PENDING_PROFESSOR_QUESTION_KEY)
+        window.setTimeout(() => {
+          document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          document.getElementById('hero-question')?.focus()
+        }, 150)
+      }
+    }
+    const unsubscribe = onProfessorAuthChange(restorePendingQuestion)
+    void initializeProfessorAuth().then(restorePendingQuestion).catch(() => {
+      if (active) setProfessorState({ kind: 'error', message: 'Não foi possível restaurar sua sessão. Solicite um novo link de acesso.' })
+    })
+    return () => { active = false; unsubscribe() }
+  }, [])
 
   const openProfessor = () => {
     document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -182,6 +249,7 @@ function App() {
   const startQuestion = async () => {
     const question = query.trim()
     if (!question) return
+    setLoginConfirmed(false)
     setLiveAnswer('')
     track('professor_question_started', { question_length: question.length })
     if (!isOfficialProfessorEnabled) {
@@ -196,7 +264,11 @@ function App() {
     try {
       setProfessorState({ kind: 'checking-session' })
       if (!await hasProfessorSession()) {
-        setProfessorState({ kind: 'login', message: 'Entre com seu e-mail para enviar esta pergunta.' })
+        window.localStorage.setItem(PENDING_PROFESSOR_QUESTION_KEY, question)
+        setProfessorState({ kind: 'idle' })
+        setLoginError('')
+        setLoginSent(false)
+        setLoginOpen(true)
         return
       }
       setProfessorState({ kind: 'asking' })
@@ -206,7 +278,15 @@ function App() {
       track('professor_question_answered', { conversation_id: response.conversationId })
     } catch (reason) {
       const state = professorErrorState(reason)
-      setProfessorState(state)
+      if (state.kind === 'login') {
+        window.localStorage.setItem(PENDING_PROFESSOR_QUESTION_KEY, question)
+        setProfessorState({ kind: 'idle' })
+        setLoginError('')
+        setLoginSent(false)
+        setLoginOpen(true)
+      } else {
+        setProfessorState(state)
+      }
       track('professor_question_failed', { state: state.kind })
     }
   }
@@ -219,6 +299,7 @@ function App() {
     setLoginLoading(true)
     setLoginError('')
     try {
+      if (query.trim()) window.localStorage.setItem(PENDING_PROFESSOR_QUESTION_KEY, query.trim())
       await sendProfessorLoginLink(loginEmail)
       setLoginSent(true)
     } catch (reason) {
@@ -232,7 +313,7 @@ function App() {
 
   return (
     <main id="inicio">
-      <div className="notice"><span>{isOfficialProfessorEnabled ? 'Integração oficial preparada' : 'Demonstração simulada · integração real desativada'}</span><a href="#perguntar">Faça sua primeira pergunta <ArrowRight size={14} /></a></div>
+      <div className="notice"><span>{isOfficialProfessorEnabled ? 'Professor IA pronto para ajudar' : 'Demonstração simulada · integração real desativada'}</span><a href="#perguntar">Faça sua primeira pergunta <ArrowRight size={14} /></a></div>
       <header className="header container">
         <Logo />
         <nav id="primary-navigation" className={menuOpen ? 'nav open' : 'nav'} aria-label="Navegação principal">
@@ -246,9 +327,9 @@ function App() {
       <section className="hero container" id="perguntar">
         <div className="hero-copy">
           <div className="product-label"><span className="pulse-dot" /> Entenda o que é e como funciona o Professor IA</div>
-          <p className="hero-product">Seu guia educacional dentro do AçõesJa.</p>
+          <p className="hero-product">Seu guia educacional dentro do AçõesJA.</p>
           <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
-          <p>Quando você seleciona dados no AçõesJá, o Professor usa somente esses itens de contexto para explicar P/L, dívida, resultados e outros indicadores daquela empresa.</p>
+          <p>Faça perguntas sobre ações, indicadores e resultados. O Professor IA transforma conceitos do mercado em explicações claras para apoiar seu aprendizado.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
             <div><span>01</span><p><strong>Escolha uma ação</strong> que você quer entender melhor.</p></div>
             <div><span>02</span><p><strong>Pergunte sobre os dados</strong> que chamaram sua atenção.</p></div>
@@ -262,13 +343,13 @@ function App() {
         </div>
         <div className="hero-professor-panel" aria-label="Teste o Professor IA">
           <div className="hero-professor-head">
-            <div><ProfessorAvatar /><div><strong>Professor IA</strong><small>{isOfficialProfessorEnabled && <i />} {isOfficialProfessorEnabled ? 'integração preparada' : 'preview sem provider'}</small></div></div>
-            <span>{isOfficialProfessorEnabled ? 'Integração oficial' : 'Demonstração simulada'}</span>
+            <div><ProfessorAvatar /><div><strong>Professor IA</strong><small>{isOfficialProfessorEnabled && <i />} {isOfficialProfessorEnabled ? 'pronto para te ajudar' : 'preview sem provider'}</small></div></div>
+            <span>{isOfficialProfessorEnabled ? 'Acesso oficial' : 'Demonstração simulada'}</span>
           </div>
           <div className="hero-professor-intro">
-            <span>ENTENDA COMO FUNCIONA</span>
-            <h2>Uma resposta com o contexto da ação.</h2>
-            <p>Pergunte do seu jeito. Se houver contexto selecionado no AçõesJá, a interface mostra exatamente quais itens serão enviados.</p>
+            <span>ENTENDA O QUE É E COMO FUNCIONA</span>
+            <h2>Uma resposta que ajuda você a entender.</h2>
+            <p>Pergunte do seu jeito. O Professor IA explica conceitos, indicadores e resultados com linguagem clara e foco educacional.</p>
           </div>
           <div className="question-box hero-question-box">
             <div className="question-box-head"><span><MessageCircle size={17} /> Pergunte ao Professor</span><small><LockKeyhole size={14} /> {isOfficialProfessorEnabled ? 'login por e-mail ao enviar' : 'preview sem sessão real'}</small></div>
@@ -277,20 +358,11 @@ function App() {
             <div className="question-suggestions" aria-label="Sugestões de perguntas">
               {questions.slice(0, 2).map((question) => <button key={question} type="button" onClick={() => setQuery(question)}>{question}</button>)}
             </div>
-            <div className="context-summary"><strong>Contexto enviado</strong><span>Nenhum item selecionado nesta LP.</span></div>
             <div className="question-box-bottom"><small>{query.length}/280</small><button className="button button-primary" disabled={busy || !query.trim()} onClick={startQuestion}>{busy ? 'Verificando...' : 'Perguntar agora'} <ArrowRight size={17} /></button></div>
+            {loginConfirmed && <p className="professor-status professor-success" role="status">Login confirmado. Sua pergunta foi preservada e está pronta para enviar.</p>}
             {professorState.kind === 'checking-session' && <p className="professor-status" role="status">Verificando sua sessão oficial antes de enviar a pergunta…</p>}
             {professorState.kind === 'asking' && <p className="professor-status" role="status">O Professor está analisando sua pergunta…</p>}
             {['context-too-large', 'limited', 'provider-unavailable', 'error', 'preview-only'].includes(professorState.kind) && 'message' in professorState && <p className={`form-error question-error state-${professorState.kind}`} role="alert">{professorState.message}</p>}
-            {professorState.kind === 'login' && <div className="professor-action" role="region" aria-label="Login do Professor IA">
-              <p>{loginSent ? 'Enviamos um link de acesso. Abra seu e-mail e volte por esse link para continuar.' : professorState.message}</p>
-              {!loginSent && <div className="professor-login-form">
-                <label className="sr-only" htmlFor="professor-login-email">Seu e-mail</label>
-                <input id="professor-login-email" type="email" value={loginEmail} onChange={(event) => { setLoginEmail(event.target.value); setLoginError('') }} onKeyDown={(event) => { if (event.key === 'Enter') void sendLoginLink() }} placeholder="voce@exemplo.com" autoComplete="email" />
-                <button type="button" disabled={loginLoading} onClick={sendLoginLink}>{loginLoading ? 'Enviando…' : 'Receber link de acesso'} <ArrowRight size={15} /></button>
-              </div>}
-              {loginError && <p className="form-error" role="alert">{loginError}</p>}
-            </div>}
             {liveAnswer && <article className="live-answer" aria-live="polite"><span>Professor IA</span><p>{liveAnswer}</p></article>}
           </div>
           <p className="hero-test-note"><Sparkles size={14} /> {isOfficialProfessorEnabled ? 'A resposta real exige login por e-mail.' : 'Este preview não chama provider e não substitui erros por respostas simuladas.'}</p>
@@ -300,8 +372,8 @@ function App() {
       <section className="context-section container" id="como-funciona">
         <div><span className="eyebrow">Como o Professor ajuda</span><h2>Da ação escolhida à explicação que faz sentido.</h2></div>
         <p>O Professor parte dos dados da empresa selecionada para explicar a métrica no contexto daquele ativo e indicar o que vale investigar depois.</p>
-        <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJa">
-          <div><span>O ecossistema</span><strong>AçõesJa</strong></div>
+        <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJA">
+          <div><span>O ecossistema</span><strong>AçõesJA</strong></div>
           <ArrowDownRight size={18} />
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
@@ -344,8 +416,9 @@ function App() {
         <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quando o Professor estiver disponível, você quer continuar a conversa?</h2></div><button className="button button-light" onClick={() => setModal('checkout')}>Quero receber a condição de lançamento <ArrowRight size={18} /></button></div>
       </section>
 
-      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJa. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJa</span></div></footer>
+      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJA. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJA</span></div></footer>
       {modal && <Modal kind={modal} onClose={() => setModal(null)} />}
+      {loginOpen && <ProfessorLoginModal email={loginEmail} error={loginError} loading={loginLoading} sent={loginSent} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={() => setLoginOpen(false)} onSubmit={sendLoginLink} />}
     </main>
   )
 }

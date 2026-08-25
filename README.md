@@ -1,4 +1,4 @@
-# AçõesJá — Professor IA
+# AçõesJA — Professor IA
 
 Landing page React/Vite conectada ao BFF do Professor IA com autenticação Supabase por magic link.
 
