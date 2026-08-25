@@ -8,6 +8,7 @@ chamada bearer direta ao backend AçõesJá.
 ```text
 web/       landing page, login Supabase, API direta e histórico local
 supabase/  bootstrap da lista de lançamento; Auth é gerenciado pelo Supabase
+server/    stub 410 temporário para o projeto Vercel antigo
 design/    ativos e referências da marca
 ```
 
@@ -68,5 +69,6 @@ Variáveis `VITE_*` são públicas. A LP precisa somente de:
 - PostHog opcional.
 
 Nunca adicione `SUPABASE_SECRET_KEY`, service role, chave do LLM ou outro
-segredo ao projeto ou bundle. O antigo projeto Vercel `server` não participa
-mais do runtime e pode ser arquivado depois de confirmar o novo deploy.
+segredo ao projeto ou bundle. O antigo projeto Vercel `server` não participa da
+integração e responde somente `410 Gone`. Ele pode ser desconectado/arquivado
+depois de confirmar o novo deploy; então a pasta stub também poderá ser removida.
