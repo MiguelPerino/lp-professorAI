@@ -145,9 +145,12 @@ async function askProfessor(question: string, userId: string): Promise<string> {
   return answer
 }
 
-const server = createServer(async (request: IncomingMessage, response: ServerResponse) => {
+async function handler(request: IncomingMessage, response: ServerResponse): Promise<void> {
   setCors(request, response)
-  if (request.method === 'OPTIONS') return response.writeHead(204).end()
+  if (request.method === 'OPTIONS') {
+    response.writeHead(204).end()
+    return
+  }
   if (request.method === 'GET' && request.url === '/health') {
     return send(response, 200, { ok: true, service: 'acoesja-professor-api' })
   }
@@ -200,8 +203,13 @@ const server = createServer(async (request: IncomingMessage, response: ServerRes
     const message = error instanceof Error ? error.message : 'Não foi possível processar a pergunta'
     return send(response, 502, { error: message })
   }
-})
+}
 
-server.listen(port, () => {
-  console.info(`Professor API disponível em http://localhost:${port}`)
-})
+export default handler
+
+if (process.env.NODE_ENV !== 'production') {
+  const server = createServer(handler)
+  server.listen(port, () => {
+    console.info(`Professor API disponível em http://localhost:${port}`)
+  })
+}
