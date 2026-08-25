@@ -22,6 +22,7 @@ import { askProfessor, hasProfessorSession, initializeProfessorAuth, joinWaitlis
 
 type ModalKind = 'checkout' | 'terms' | 'privacy' | null
 const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
+const PROFESSOR_OTP_LENGTH = 8
 
 const questions = [
   'A empresa teve lucro. Então por que a ação caiu?',
@@ -202,7 +203,7 @@ function ProfessorLoginModal({ code, cooldown, email, error, resending, sending,
         <span className="eyebrow">Acesso seguro</span>
         {step === 'email' && <>
           <h2 id="professor-login-title">Entre para conversar com o Professor IA.</h2>
-          <p>Sua pergunta ficará salva. Enviaremos um código de acesso de seis dígitos para o seu e-mail.</p>
+          <p>Sua pergunta ficará salva. Enviaremos um código de acesso de oito dígitos para o seu e-mail.</p>
           <form onSubmit={(event) => { event.preventDefault(); onSubmitEmail() }}>
             <label className="field-label" htmlFor="professor-login-email">Seu melhor e-mail</label>
             <input ref={emailRef} id="professor-login-email" type="email" value={email} onChange={(event) => onChangeEmail(event.target.value)} placeholder="voce@exemplo.com" autoComplete="email" disabled={busy} required />
@@ -214,8 +215,8 @@ function ProfessorLoginModal({ code, cooldown, email, error, resending, sending,
           <p id="professor-otp-help">Enviamos um código de acesso para:<strong className="professor-otp-email">{email}</strong></p>
           <form onSubmit={(event) => { event.preventDefault(); onVerify() }}>
             <label className="field-label" htmlFor="professor-login-code">Código de acesso</label>
-            <input ref={codeRef} className="professor-otp-input" id="professor-login-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" aria-describedby="professor-otp-help" value={code} onChange={(event) => onChangeCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" disabled={busy} required />
-            <button className="button button-dark wide" type="submit" disabled={busy || code.length !== 6}>{verifying ? 'Confirmando…' : 'Confirmar código'} <ArrowRight size={17} /></button>
+            <input ref={codeRef} className="professor-otp-input" id="professor-login-code" type="text" inputMode="numeric" pattern={`[0-9]{${PROFESSOR_OTP_LENGTH}}`} maxLength={PROFESSOR_OTP_LENGTH} autoComplete="one-time-code" aria-describedby="professor-otp-help" value={code} onChange={(event) => onChangeCode(event.target.value.replace(/\D/g, '').slice(0, PROFESSOR_OTP_LENGTH))} placeholder="00000000" disabled={busy} required />
+            <button className="button button-dark wide" type="submit" disabled={busy || code.length !== PROFESSOR_OTP_LENGTH}>{verifying ? 'Confirmando…' : 'Confirmar código'} <ArrowRight size={17} /></button>
           </form>
           <div className="professor-otp-actions">
             <button type="button" disabled={busy || cooldown > 0} onClick={onResend}>{resending ? 'Reenviando…' : cooldown > 0 ? `Reenviar código em ${cooldown}s` : 'Reenviar código'}</button>
@@ -365,8 +366,8 @@ function App() {
 
   const verifyOtp = async () => {
     if (otpRequestInFlight.current) return
-    if (!/^\d{6}$/.test(loginCode)) {
-      setLoginError('Digite os seis dígitos do código recebido por e-mail.')
+    if (!/^\d{8}$/.test(loginCode)) {
+      setLoginError('Digite os oito dígitos do código recebido por e-mail.')
       return
     }
     otpRequestInFlight.current = true
@@ -377,7 +378,7 @@ function App() {
       setLoginStep('success')
       window.setTimeout(restorePendingQuestion, 700)
     } catch {
-      setLoginError('Código incorreto ou expirado. Confira os seis dígitos ou solicite um novo código.')
+      setLoginError('Código incorreto ou expirado. Confira os oito dígitos ou solicite um novo código.')
     } finally {
       otpRequestInFlight.current = false
       setOtpVerifying(false)
