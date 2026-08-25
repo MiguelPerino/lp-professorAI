@@ -47,34 +47,34 @@ const responses: Record<string, string> = {
 
 const flowSteps = [
   {
-    title: 'Sua dúvida',
-    summary: 'Você escreve o que quer compreender.',
-    explanationTitle: 'O aprendizado começa pela sua pergunta.',
-    explanation: 'Conte o conceito, indicador ou situação que quer compreender. Não é necessário dominar termos técnicos para começar.',
+    title: 'Escolha a ação',
+    summary: 'Você seleciona a empresa que quer entender.',
+    explanationTitle: 'A análise começa em uma ação específica.',
+    explanation: 'Escolha a ação que você quer analisar. A partir daí, o Professor sabe qual empresa, setor e momento do mercado devem orientar a conversa.',
   },
   {
-    title: 'Conceitos',
-    summary: 'O Professor identifica as ideias envolvidas.',
-    explanationTitle: 'A dúvida é conectada aos conceitos necessários.',
-    explanation: 'O Professor separa os conceitos relevantes e explica como eles se relacionam, sem pressupor conhecimento prévio.',
+    title: 'Dados atuais',
+    summary: 'Métricas e acontecimentos entram no contexto.',
+    explanationTitle: 'Os números da ação dão base à resposta.',
+    explanation: 'P/L, ROE, dívida, margens, resultados e dados atualizados ajudam o Professor a responder sobre a situação real daquela empresa — não sobre um exemplo genérico.',
+  },
+  {
+    title: 'Sua pergunta',
+    summary: 'Pergunte sobre a métrica que chamou atenção.',
+    explanationTitle: 'Você pergunta do seu jeito.',
+    explanation: 'Você pode perguntar sobre P/L, dívida, resultados ou qualquer dado que chamou sua atenção. Não é necessário dominar termos técnicos; basta contar o que quer compreender.',
   },
   {
     title: 'Explicação',
-    summary: 'A resposta usa linguagem clara e educacional.',
-    explanationTitle: 'O Professor explica sem transformar educação em recomendação.',
-    explanation: 'A resposta apresenta raciocínio e limitações, sem indicar compra, venda, preço-alvo ou alocação pessoal.',
-  },
-  {
-    title: 'Comparação',
-    summary: 'Você descobre o que observar em conjunto.',
-    explanationTitle: 'Um número isolado vira uma investigação mais completa.',
-    explanation: 'Quando fizer sentido, a resposta sugere períodos, indicadores ou cenários que ajudam a testar a interpretação.',
+    summary: 'O Professor conecta a métrica à empresa.',
+    explanationTitle: 'A resposta considera o contexto escolhido.',
+    explanation: 'O Professor traduz o indicador e explica o que ele pode representar naquele ativo, considerando histórico, setor e momento da empresa.',
   },
   {
     title: 'Próximo passo',
-    summary: 'Você recebe uma nova pergunta para avançar.',
+    summary: 'Você descobre o que comparar e investigar.',
     explanationTitle: 'A explicação vira um caminho de análise.',
-    explanation: 'Além de responder, o Professor propõe um próximo passo de estudo para você continuar aprendendo de forma ativa.',
+    explanation: 'Além de responder, o Professor mostra quais métricas, períodos e empresas podem ser comparados para você continuar investigando com clareza.',
   },
 ]
 
@@ -454,13 +454,13 @@ function App() {
       <section className="hero container" id="perguntar">
         <div className="hero-copy">
           <div className="product-label"><span className="pulse-dot" /> Entenda o que é e como funciona o Professor IA</div>
-          <p className="hero-product">Seu guia educacional do ecossistema AçõesJá.</p>
-          <h1>Faça uma pergunta. Entenda investimentos <em>sem respostas prontas.</em></h1>
-          <p>Converse sobre ações, indicadores e conceitos do mercado. O Professor IA transforma dúvidas em explicações claras para apoiar seu aprendizado.</p>
+          <p className="hero-product">Seu guia educacional dentro do AçõesJá.</p>
+          <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
+          <p>Faça perguntas sobre ações, indicadores e resultados. O Professor IA transforma conceitos do mercado em explicações claras para apoiar seu aprendizado.</p>
           <div className="hero-benefits" aria-label="Para que serve o Professor IA">
-            <div><span>01</span><p><strong>Escreva sua dúvida</strong> do seu jeito.</p></div>
-            <div><span>02</span><p><strong>Entenda os conceitos</strong> envolvidos no raciocínio.</p></div>
-            <div><span>03</span><p><strong>Receba um próximo passo</strong> para continuar estudando.</p></div>
+            <div><span>01</span><p><strong>Escolha uma ação</strong> que você quer entender melhor.</p></div>
+            <div><span>02</span><p><strong>Pergunte sobre os dados</strong> que chamaram sua atenção.</p></div>
+            <div><span>03</span><p><strong>Receba uma explicação</strong> baseada naquele ativo.</p></div>
           </div>
           <div className="hero-actions">
             <a className="button button-primary" href="#demonstracao">Ver demonstração <ArrowDownRight size={18} /></a>
@@ -502,13 +502,13 @@ function App() {
 
       <section className="context-section container" id="como-funciona">
         <div><span className="eyebrow">Como o Professor ajuda</span><h2>Da ação escolhida à explicação que faz sentido.</h2></div>
-          <p>O Professor parte da sua pergunta para explicar conceitos, relações e limitações, indicando o que vale investigar depois.</p>
+        <p>O Professor parte dos dados da empresa selecionada para explicar a métrica no contexto daquele ativo e indicar o que vale investigar depois.</p>
         <div className="ecosystem-note" aria-label="Professor IA é a experiência de aprendizado do AçõesJá">
           <div><span>O ecossistema</span><strong>AçõesJá</strong></div>
           <ArrowDownRight size={18} />
           <div><span>A experiência de aprendizado</span><strong>Professor IA</strong></div>
         </div>
-        <div className="flow" aria-label="Dúvida leva a conceitos, explicação, comparação e próximo passo">
+        <div className="flow" aria-label="Ação escolhida leva a dados atuais, pergunta, explicação e próximo passo">
           {flowSteps.map((step, index) => <button key={step.title} type="button" className={`flow-item${activeFlowStep === index ? ' active' : ''}`} aria-pressed={activeFlowStep === index} onClick={() => setActiveFlowStep(index)}><span>0{index + 1}</span><strong>{step.title}</strong><p>{step.summary}</p>{index < 4 && <ArrowRight className="flow-arrow" size={18} />}</button>)}
         </div>
         <article className="flow-explainer" aria-live="polite">
