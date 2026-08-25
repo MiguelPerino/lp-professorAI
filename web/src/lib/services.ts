@@ -1,7 +1,7 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { config, isOfficialProfessorEnabled, isSupabaseConfigured } from './config'
-import { OfficialApiAdapter, OfficialApiError } from './officialApi'
-import type { ProfessorChatRequest, ProfessorChatResponse } from './officialApi'
+import { config, isProfessorEnabled, isSupabaseConfigured } from './config'
+import { ProfessorApi, ProfessorApiError } from './professorApi'
+import type { ProfessorChatRequest, ProfessorChatResponse, ProfessorUsage } from './professorApi'
 
 function fail(message: string): never {
   throw new Error(message)
@@ -12,7 +12,7 @@ async function errorMessage(response: Response, fallback: string) {
   return payload?.error ?? payload?.message ?? fallback
 }
 
-let officialApi: OfficialApiAdapter | undefined
+let professorApi: ProfessorApi | undefined
 let supabase: SupabaseClient | undefined
 
 function getSupabase(): SupabaseClient {
@@ -23,14 +23,14 @@ function getSupabase(): SupabaseClient {
   return supabase
 }
 
-function getOfficialApi(): OfficialApiAdapter {
-  if (!isOfficialProfessorEnabled) fail('A integração real está desativada neste preview.')
-  officialApi ??= new OfficialApiAdapter({ baseUrl: config.acoesJaApiBase })
-  return officialApi
+function getProfessorApi(): ProfessorApi {
+  if (!isProfessorEnabled) fail('A integração real ainda não foi configurada.')
+  professorApi ??= new ProfessorApi({ baseUrl: config.professorApiBase })
+  return professorApi
 }
 
 export async function initializeProfessorAuth(): Promise<boolean> {
-  if (!isOfficialProfessorEnabled || !isSupabaseConfigured) return false
+  if (!isProfessorEnabled) return false
   const { data, error } = await getSupabase().auth.getSession()
   if (error) throw error
   return Boolean(data.session?.access_token)
@@ -40,6 +40,12 @@ export async function hasProfessorSession(): Promise<boolean> {
   const { data, error } = await getSupabase().auth.getSession()
   if (error) throw error
   return Boolean(data.session?.access_token)
+}
+
+export async function getProfessorUserId(): Promise<string | null> {
+  const { data, error } = await getSupabase().auth.getSession()
+  if (error) throw error
+  return data.session?.user.id ?? null
 }
 
 export async function sendProfessorOtp(email: string): Promise<void> {
@@ -89,7 +95,15 @@ export async function askProfessor(request: ProfessorChatRequest): Promise<Profe
   if (error) throw error
   const accessToken = data.session?.access_token
   if (!accessToken) {
-    throw new OfficialApiError('Entre com seu e-mail para continuar.', 401, 'LOGIN_REQUIRED')
+    throw new ProfessorApiError('Entre com seu e-mail para continuar.', 401, 'LOGIN_REQUIRED')
   }
-  return getOfficialApi().chat(request, accessToken)
+  return getProfessorApi().chat(request, accessToken)
+}
+
+export async function getProfessorUsage(): Promise<ProfessorUsage> {
+  const { data, error } = await getSupabase().auth.getSession()
+  if (error) throw error
+  const accessToken = data.session?.access_token
+  if (!accessToken) throw new ProfessorApiError('Entre com seu e-mail para continuar.', 401, 'LOGIN_REQUIRED')
+  return getProfessorApi().currentUsage(accessToken)
 }

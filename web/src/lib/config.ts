@@ -1,6 +1,8 @@
 export const config = {
-  acoesJaApiBase: (import.meta.env.VITE_ACOESJA_API_BASE?.trim() || '').replace(/\/$/, ''),
-  professorRealEnabled: import.meta.env.VITE_PROFESSOR_REAL_ENABLED === 'true',
+  professorApiBase: (
+    import.meta.env.VITE_PROFESSOR_API_BASE?.trim()
+      || 'https://api.acoesja.com.br/api/lp/professor'
+  ).replace(/\/$/, ''),
   posthogKey: import.meta.env.VITE_POSTHOG_KEY?.trim() ?? '',
   posthogHost: (import.meta.env.VITE_POSTHOG_HOST?.trim() || 'https://us.i.posthog.com').replace(/\/$/, ''),
   supabaseAnonKey:
@@ -9,5 +11,4 @@ export const config = {
 }
 
 export const isSupabaseConfigured = Boolean(config.supabaseUrl && config.supabaseAnonKey)
-export const isGitHubPagesPreview = typeof window !== 'undefined' && window.location.hostname.endsWith('.github.io')
-export const isOfficialProfessorEnabled = config.professorRealEnabled && !isGitHubPagesPreview && Boolean(config.acoesJaApiBase)
+export const isProfessorEnabled = isSupabaseConfigured && Boolean(config.professorApiBase)

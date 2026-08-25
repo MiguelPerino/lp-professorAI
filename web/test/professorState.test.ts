@@ -1,16 +1,15 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { OfficialApiError } from '../src/lib/officialApi.ts'
+import { ProfessorApiError } from '../src/lib/professorApi.ts'
 import { professorErrorState } from '../src/lib/professorState.ts'
 
 const cases = [
-  [new OfficialApiError('', 401), 'login'],
-  [new OfficialApiError('', 403, 'POLICIES_NOT_ACCEPTED'), 'policies'],
-  [new OfficialApiError('', 400, 'AI_CONTEXT_TOO_LARGE'), 'context-too-large'],
-  [new OfficialApiError('', 429, 'AI_RATE_LIMITED'), 'limited'],
-  [new OfficialApiError('', 429, 'AI_DAILY_LIMIT_REACHED'), 'limited'],
-  [new OfficialApiError('', 503, 'AI_PROVIDER_UNAVAILABLE'), 'provider-unavailable'],
-  [new OfficialApiError('Falha validada', 400, 'AI_INVALID_REQUEST'), 'error'],
+  [new ProfessorApiError('', 401), 'login'],
+  [new ProfessorApiError('', 400, 'AI_CONTEXT_TOO_LARGE'), 'context-too-large'],
+  [new ProfessorApiError('', 429, 'AI_RATE_LIMITED'), 'limited'],
+  [new ProfessorApiError('', 429, 'AI_DAILY_LIMIT_REACHED'), 'limited'],
+  [new ProfessorApiError('', 503, 'AI_PROVIDER_UNAVAILABLE'), 'provider-unavailable'],
+  [new ProfessorApiError('Falha validada', 400, 'AI_INVALID_REQUEST'), 'error'],
 ] as const
 
 for (const [error, expected] of cases) {

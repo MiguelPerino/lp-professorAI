@@ -1,4 +1,4 @@
-import { OfficialApiError } from './officialApi'
+import { ProfessorApiError } from './professorApi'
 
 export type ProfessorState =
   | { kind: 'idle' }
@@ -14,14 +14,11 @@ export type ProfessorState =
   | { kind: 'preview-only'; message: string }
 
 export function professorErrorState(reason: unknown): ProfessorState {
-  if (!(reason instanceof OfficialApiError)) {
+  if (!(reason instanceof ProfessorApiError)) {
     return { kind: 'error', message: 'Não foi possível concluir sua pergunta. Tente novamente.' }
   }
   if (reason.status === 401 || reason.code === 'LOGIN_REQUIRED') {
     return { kind: 'login', message: 'Entre com seu e-mail para enviar esta pergunta ao Professor.' }
-  }
-  if (reason.code === 'POLICIES_NOT_ACCEPTED') {
-    return { kind: 'policies', message: 'Aceite as políticas oficiais do AçõesJA antes de continuar.' }
   }
   if (reason.code === 'AI_CONTEXT_TOO_LARGE') {
     return { kind: 'context-too-large', message: 'O contexto selecionado é grande demais. Remova itens e tente novamente.' }
