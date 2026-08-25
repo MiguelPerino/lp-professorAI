@@ -44,3 +44,6 @@ body{overflow-x:hidden}.modal-backdrop{overflow:hidden}.modal{max-height:calc(10
 /* Login por magic link do Professor IA */
 .professor-action button{justify-content:center;padding:9px 11px;border-radius:6px;background:var(--brand-primary);color:#fff}.professor-login-form{display:flex;gap:7px}.professor-login-form input{min-width:0;flex:1;padding:9px 10px;border:1px solid #d3cbed;border-radius:6px;background:#fff;color:var(--ink);font-size:11px}.professor-login-form button:disabled{cursor:not-allowed;opacity:.65}.professor-action>.form-error{margin-top:8px!important}
 @media(max-width:420px){.professor-login-form{align-items:stretch;flex-direction:column}.professor-login-form button{width:100%}}
+
+/* Ênfase da proposta e modal de autenticação */
+.product-label{font-size:12px;line-height:1.35}.hero-professor-intro>span{font-size:11px;font-weight:700}.professor-success{padding:8px 10px;border-radius:6px;background:#edf8f0;color:#27713f}.professor-login-modal h2{max-width:350px}.professor-login-modal form{margin-top:4px}.professor-login-modal .submitted{padding-top:2px}.professor-login-modal .submitted .button{color:#fff}

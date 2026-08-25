@@ -21,7 +21,7 @@ export function professorErrorState(reason: unknown): ProfessorState {
     return { kind: 'login', message: 'Entre com seu e-mail para enviar esta pergunta ao Professor.' }
   }
   if (reason.code === 'POLICIES_NOT_ACCEPTED') {
-    return { kind: 'policies', message: 'Aceite as políticas oficiais do AçõesJá antes de continuar.' }
+    return { kind: 'policies', message: 'Aceite as políticas oficiais do AçõesJA antes de continuar.' }
   }
   if (reason.code === 'AI_CONTEXT_TOO_LARGE') {
     return { kind: 'context-too-large', message: 'O contexto selecionado é grande demais. Remova itens e tente novamente.' }
