@@ -1,17 +1,17 @@
 # AçõesJá — Professor IA
 
-Landing page React/Vite preparada para o chat educacional autenticado do AçõesJá. A integração real permanece desligada: não há deploy, provider ativado, segredo ou identidade local neste repositório.
+Landing page React/Vite conectada ao BFF do Professor IA com autenticação Supabase por magic link.
 
 ## Estrutura
 
 ```text
-web/       landing page e adapter do backend oficial
-server/    protótipo legado de BFF, mantido sem alterações nesta integração
-supabase/  infraestrutura legada da lista de lançamento
+web/       landing page, login Supabase e adapter do BFF
+server/    BFF do Professor IA para Node.js/Vercel
+supabase/  autenticação, persistência, limite diário e lista de lançamento
 design/    ativos e referências da marca
 ```
 
-O chat da LP não usa o BFF legado nem Supabase Auth. A lista de lançamento ainda usa a função pública mínima existente no Supabase; isso é separado da identidade do Professor.
+O chat exige uma sessão Supabase. O frontend envia o access token somente no cabeçalho `Authorization` e o BFF valida a sessão antes de reservar cota, chamar o provider e persistir a conversa.
 
 ## Desenvolvimento
 
@@ -30,31 +30,18 @@ pnpm test
 pnpm build
 ```
 
-## Integração oficial, desligada por padrão
+## Integração do Professor
 
-A origem planejada da experiência real é `https://professor.acoesja.com.br`. A base produtiva preparada em `web/.env.example` é `https://api.acoesja.com.br/api` e sempre vem da variável pública `VITE_ACOESJA_API_BASE`.
+O frontend usa `VITE_ACOESJA_API_BASE` como origem do BFF e chama `POST /v1/professor/ask`. O login usa magic link do Supabase; depois do retorno, o SDK mantém e renova a sessão no navegador e o adapter envia o access token como Bearer.
 
-O gate `VITE_PROFESSOR_REAL_ENABLED` permanece `false`. Antes de alterá-lo, são necessários CORS exato para a origem same-site, provider autorizado e as URLs/rotas oficiais abaixo:
+No Supabase, inclua as URLs do frontend em **Authentication → URL Configuration → Redirect URLs**. Para o deploy atual, autorize `https://lp-professor-ai-web.vercel.app/**`; em desenvolvimento, autorize também `http://localhost:5173/**`.
 
-- `VITE_ACOESJA_LOGIN_URL`: URL oficial de login;
-- `VITE_ACOESJA_POLICIES_URL`: URL oficial de aceite de políticas;
-- `VITE_ACOESJA_REFRESH_PATH`: caminho oficial de refresh, relativo à base.
-
-Esses três valores não constam do contrato candidato. Portanto, ficam vazios e o cliente falha fechado: não inventa endpoint, não simula login e não repete uma chamada autenticada sem refresh oficial. O adapter já serializa o refresh e limita cada solicitação a um refresh e um retry quando o caminho for publicado.
-
-O protocolo implementado usa somente cookies HttpOnly gerenciados pelo AçõesJá:
-
-- todas as chamadas enviam `credentials: "include"`;
-- mutações obtêm `GET /auth/csrf` e enviam o nome/token devolvido pelo servidor;
-- `POST /ai/chat` envia apenas `message`, `conversationId` opcional e `contextItems`;
-- nenhum access/refresh token é lido, armazenado ou enviado pela LP;
-- erros de login, políticas, contexto, limite e provider permanecem visíveis e nunca caem em fixture;
-- a UI exibe apenas tokens absolutos devolvidos pela resposta, sem porcentagem ou saldo inventado.
+No backend, `CORS_ORIGIN` deve conter a origem exata do frontend, sem barra final. O provider configurado em `PROFESSOR_API_URL` deve aceitar o payload documentado em `server/.env.example`.
 
 ## GitHub Pages
 
-`*.github.io` é sempre tratado como preview simulado, mesmo que a flag real seja injetada por engano. Cookies `SameSite=Lax` da API são cross-site nesse host, então o workflow fixa `VITE_PROFESSOR_REAL_ENABLED=false`. A fixture está rotulada “Demonstração simulada”.
+`*.github.io` continua tratado como preview simulado mesmo que a flag real seja injetada por engano.
 
 ## Segurança
 
-Variáveis `VITE_*` são públicas. Nunca adicione chaves privadas, tokens, credenciais de provider ou secrets. A ativação, deploy, CORS, DNS, provider e custos permanecem fora do escopo desta LP e exigem autorização específica.
+Variáveis `VITE_*` são públicas. Nunca adicione `SUPABASE_SECRET_KEY`, `PROFESSOR_API_KEY` ou qualquer segredo ao projeto `web`; essas variáveis pertencem somente ao projeto `server`.
