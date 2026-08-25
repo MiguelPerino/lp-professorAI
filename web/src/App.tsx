@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowDownRight,
   ArrowRight,
@@ -169,10 +169,11 @@ type ProfessorLoginModalProps = {
 
 function ProfessorLoginModal({ email, error, loading, sent, onChangeEmail, onClose, onSubmit }: ProfessorLoginModalProps) {
   const dialogRef = useRef<HTMLElement>(null)
+  const emailRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
-    dialogRef.current?.querySelector<HTMLElement>('input, button')?.focus()
+    emailRef.current?.focus()
     const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
     document.addEventListener('keydown', onKeyDown)
     return () => { document.removeEventListener('keydown', onKeyDown); previousFocus?.focus() }
@@ -187,7 +188,7 @@ function ProfessorLoginModal({ email, error, loading, sent, onChangeEmail, onClo
         <p>Sua pergunta ficará salva. Enviaremos um link por e-mail e, depois da confirmação, você voltará exatamente para ela.</p>
         {sent ? <div className="submitted"><span><Check size={22} /></span><h3>Confira seu e-mail.</h3><p>Abra o link “Sign in” para confirmar o acesso e voltar à sua pergunta.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a pergunta</button></div> : <form onSubmit={(event) => { event.preventDefault(); onSubmit() }}>
           <label className="field-label" htmlFor="professor-login-email">Seu melhor e-mail</label>
-          <input id="professor-login-email" type="email" value={email} onChange={(event) => onChangeEmail(event.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
+          <input ref={emailRef} id="professor-login-email" type="email" value={email} onChange={(event) => onChangeEmail(event.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
           <button className="button button-dark wide" type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Receber link de acesso'} <ArrowRight size={17} /></button>
         </form>}
         {error && <p className="form-error" role="alert">{error}</p>}
@@ -210,6 +211,7 @@ function App() {
   const [loginError, setLoginError] = useState('')
   const [loginOpen, setLoginOpen] = useState(false)
   const [loginConfirmed, setLoginConfirmed] = useState(false)
+  const closeLogin = useCallback(() => setLoginOpen(false), [])
 
   useEffect(() => {
     let active = true
@@ -418,7 +420,7 @@ function App() {
 
       <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJA. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJA</span></div></footer>
       {modal && <Modal kind={modal} onClose={() => setModal(null)} />}
-      {loginOpen && <ProfessorLoginModal email={loginEmail} error={loginError} loading={loginLoading} sent={loginSent} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={() => setLoginOpen(false)} onSubmit={sendLoginLink} />}
+      {loginOpen && <ProfessorLoginModal email={loginEmail} error={loginError} loading={loginLoading} sent={loginSent} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onSubmit={sendLoginLink} />}
     </main>
   )
 }
