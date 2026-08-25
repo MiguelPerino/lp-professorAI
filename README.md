@@ -1,6 +1,6 @@
 # AçõesJA — Professor IA
 
-Landing page React/Vite conectada ao BFF do Professor IA com autenticação Supabase por magic link.
+Landing page React/Vite conectada ao BFF do Professor IA com autenticação Supabase por código OTP enviado por e-mail.
 
 ## Estrutura
 
@@ -32,9 +32,9 @@ pnpm build
 
 ## Integração do Professor
 
-O frontend usa `VITE_ACOESJA_API_BASE` como origem do BFF e chama `POST /v1/professor/ask`. O login usa magic link do Supabase; depois do retorno, o SDK mantém e renova a sessão no navegador e o adapter envia o access token como Bearer.
+O frontend usa `VITE_ACOESJA_API_BASE` como origem do BFF e chama `POST /v1/professor/ask`. O login envia um OTP de seis dígitos pelo Supabase e valida o código com `verifyOtp`; depois da confirmação, o SDK mantém e renova a sessão no navegador e o adapter envia o access token como Bearer.
 
-No Supabase, inclua as URLs do frontend em **Authentication → URL Configuration → Redirect URLs**. Para o deploy atual, autorize `https://lp-professor-ai-web.vercel.app/**`; em desenvolvimento, autorize também `http://localhost:5173/**`.
+No Supabase, o template de e-mail deve exibir `{{ .Token }}`. A geração, expiração e validação do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas um cooldown visual de 60 segundos para reenvio.
 
 No backend, `CORS_ORIGIN` deve conter a origem exata do frontend, sem barra final. O provider configurado em `PROFESSOR_API_URL` deve aceitar o payload documentado em `server/.env.example`.
 

@@ -18,7 +18,7 @@ import { track } from './lib/analytics'
 import { isGitHubPagesPreview, isOfficialProfessorEnabled } from './lib/config'
 import { professorErrorState } from './lib/professorState'
 import type { ProfessorState } from './lib/professorState'
-import { askProfessor, hasProfessorSession, initializeProfessorAuth, joinWaitlist, onProfessorAuthChange, sendProfessorLoginLink } from './lib/services'
+import { askProfessor, hasProfessorSession, initializeProfessorAuth, joinWaitlist, sendProfessorOtp, verifyProfessorOtp } from './lib/services'
 
 type ModalKind = 'checkout' | 'terms' | 'privacy' | null
 const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
@@ -158,39 +158,71 @@ function Modal({ kind, onClose }: { kind: Exclude<ModalKind, null>; onClose: () 
 }
 
 type ProfessorLoginModalProps = {
+  code: string
+  cooldown: number
   email: string
   error: string
-  loading: boolean
-  sent: boolean
+  resending: boolean
+  sending: boolean
+  step: 'email' | 'code' | 'success'
+  verifying: boolean
+  onBack: () => void
+  onChangeCode: (code: string) => void
   onChangeEmail: (email: string) => void
   onClose: () => void
-  onSubmit: () => void
+  onResend: () => void
+  onSubmitEmail: () => void
+  onVerify: () => void
 }
 
-function ProfessorLoginModal({ email, error, loading, sent, onChangeEmail, onClose, onSubmit }: ProfessorLoginModalProps) {
+function ProfessorLoginModal({ code, cooldown, email, error, resending, sending, step, verifying, onBack, onChangeCode, onChangeEmail, onClose, onResend, onSubmitEmail, onVerify }: ProfessorLoginModalProps) {
   const dialogRef = useRef<HTMLElement>(null)
   const emailRef = useRef<HTMLInputElement>(null)
+  const codeRef = useRef<HTMLInputElement>(null)
+  const busy = sending || verifying || resending
+  const canCloseRef = useRef(!busy)
+  canCloseRef.current = !busy
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
-    emailRef.current?.focus()
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') onClose() }
+    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape' && canCloseRef.current) onClose() }
     document.addEventListener('keydown', onKeyDown)
     return () => { document.removeEventListener('keydown', onKeyDown); previousFocus?.focus() }
   }, [onClose])
 
+  useEffect(() => {
+    if (step === 'email') emailRef.current?.focus()
+    if (step === 'code') codeRef.current?.focus()
+  }, [step])
+
   return (
-    <div className="modal-backdrop" role="presentation" onMouseDown={onClose}>
+    <div className="modal-backdrop" role="presentation" onMouseDown={() => { if (!busy) onClose() }}>
       <section ref={dialogRef} className="modal professor-login-modal" role="dialog" aria-modal="true" aria-labelledby="professor-login-title" onMouseDown={(event) => event.stopPropagation()}>
-        <button className="modal-close" onClick={onClose} aria-label="Fechar login"><X size={20} /></button>
+        <button className="modal-close" disabled={busy} onClick={onClose} aria-label="Fechar login"><X size={20} /></button>
         <span className="eyebrow">Acesso seguro</span>
-        <h2 id="professor-login-title">Entre para conversar com o Professor IA.</h2>
-        <p>Sua pergunta ficará salva. Enviaremos um link por e-mail e, depois da confirmação, você voltará exatamente para ela.</p>
-        {sent ? <div className="submitted"><span><Check size={22} /></span><h3>Confira seu e-mail.</h3><p>Abra o link “Sign in” para confirmar o acesso e voltar à sua pergunta.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a pergunta</button></div> : <form onSubmit={(event) => { event.preventDefault(); onSubmit() }}>
-          <label className="field-label" htmlFor="professor-login-email">Seu melhor e-mail</label>
-          <input ref={emailRef} id="professor-login-email" type="email" value={email} onChange={(event) => onChangeEmail(event.target.value)} placeholder="voce@exemplo.com" autoComplete="email" required />
-          <button className="button button-dark wide" type="submit" disabled={loading}>{loading ? 'Enviando…' : 'Receber link de acesso'} <ArrowRight size={17} /></button>
-        </form>}
+        {step === 'email' && <>
+          <h2 id="professor-login-title">Entre para conversar com o Professor IA.</h2>
+          <p>Sua pergunta ficará salva. Enviaremos um código de acesso de seis dígitos para o seu e-mail.</p>
+          <form onSubmit={(event) => { event.preventDefault(); onSubmitEmail() }}>
+            <label className="field-label" htmlFor="professor-login-email">Seu melhor e-mail</label>
+            <input ref={emailRef} id="professor-login-email" type="email" value={email} onChange={(event) => onChangeEmail(event.target.value)} placeholder="voce@exemplo.com" autoComplete="email" disabled={busy} required />
+            <button className="button button-dark wide" type="submit" disabled={busy}>{sending ? 'Enviando código…' : 'Receber código de acesso'} <ArrowRight size={17} /></button>
+          </form>
+        </>}
+        {step === 'code' && <>
+          <h2 id="professor-login-title">Verifique seu e-mail.</h2>
+          <p id="professor-otp-help">Enviamos um código de acesso para:<strong className="professor-otp-email">{email}</strong></p>
+          <form onSubmit={(event) => { event.preventDefault(); onVerify() }}>
+            <label className="field-label" htmlFor="professor-login-code">Código de acesso</label>
+            <input ref={codeRef} className="professor-otp-input" id="professor-login-code" type="text" inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code" aria-describedby="professor-otp-help" value={code} onChange={(event) => onChangeCode(event.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" disabled={busy} required />
+            <button className="button button-dark wide" type="submit" disabled={busy || code.length !== 6}>{verifying ? 'Confirmando…' : 'Confirmar código'} <ArrowRight size={17} /></button>
+          </form>
+          <div className="professor-otp-actions">
+            <button type="button" disabled={busy || cooldown > 0} onClick={onResend}>{resending ? 'Reenviando…' : cooldown > 0 ? `Reenviar código em ${cooldown}s` : 'Reenviar código'}</button>
+            <button type="button" disabled={busy} onClick={onBack}>Alterar e-mail</button>
+          </div>
+        </>}
+        {step === 'success' && <div className="submitted"><span><Check size={22} /></span><h3>Acesso confirmado.</h3><p>Sua pergunta está pronta. Você será levado de volta para ela.</p></div>}
         {error && <p className="form-error" role="alert">{error}</p>}
       </section>
     </div>
@@ -206,37 +238,50 @@ function App() {
   const [liveAnswer, setLiveAnswer] = useState('')
   const [professorState, setProfessorState] = useState<ProfessorState>({ kind: 'idle' })
   const [loginEmail, setLoginEmail] = useState('')
-  const [loginLoading, setLoginLoading] = useState(false)
-  const [loginSent, setLoginSent] = useState(false)
+  const [loginCode, setLoginCode] = useState('')
+  const [loginStep, setLoginStep] = useState<'email' | 'code' | 'success'>('email')
+  const [otpSending, setOtpSending] = useState(false)
+  const [otpVerifying, setOtpVerifying] = useState(false)
+  const [otpResending, setOtpResending] = useState(false)
+  const [resendCooldown, setResendCooldown] = useState(0)
   const [loginError, setLoginError] = useState('')
   const [loginOpen, setLoginOpen] = useState(false)
   const [loginConfirmed, setLoginConfirmed] = useState(false)
+  const otpRequestInFlight = useRef(false)
   const closeLogin = useCallback(() => setLoginOpen(false), [])
+
+  const restorePendingQuestion = useCallback(() => {
+    const pendingQuestion = window.localStorage.getItem(PENDING_PROFESSOR_QUESTION_KEY)
+    setLoginOpen(false)
+    setLoginStep('email')
+    setLoginCode('')
+    setProfessorState({ kind: 'idle' })
+    if (pendingQuestion) {
+      setLoginConfirmed(true)
+      setQuery(pendingQuestion)
+      window.localStorage.removeItem(PENDING_PROFESSOR_QUESTION_KEY)
+      window.setTimeout(() => {
+        document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        document.getElementById('hero-question')?.focus()
+      }, 150)
+    }
+  }, [])
 
   useEffect(() => {
     let active = true
-    const restorePendingQuestion = (signedIn: boolean) => {
-      if (!active || !signedIn) return
-      const pendingQuestion = window.localStorage.getItem(PENDING_PROFESSOR_QUESTION_KEY)
-      setLoginOpen(false)
-      setLoginSent(false)
-      setProfessorState({ kind: 'idle' })
-      if (pendingQuestion) {
-        setLoginConfirmed(true)
-        setQuery(pendingQuestion)
-        window.localStorage.removeItem(PENDING_PROFESSOR_QUESTION_KEY)
-        window.setTimeout(() => {
-          document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-          document.getElementById('hero-question')?.focus()
-        }, 150)
-      }
-    }
-    const unsubscribe = onProfessorAuthChange(restorePendingQuestion)
-    void initializeProfessorAuth().then(restorePendingQuestion).catch(() => {
-      if (active) setProfessorState({ kind: 'error', message: 'Não foi possível restaurar sua sessão. Solicite um novo link de acesso.' })
+    void initializeProfessorAuth().then((signedIn) => {
+      if (active && signedIn) restorePendingQuestion()
+    }).catch(() => {
+      if (active) setProfessorState({ kind: 'error', message: 'Não foi possível restaurar sua sessão. Solicite um novo código de acesso.' })
     })
-    return () => { active = false; unsubscribe() }
-  }, [])
+    return () => { active = false }
+  }, [restorePendingQuestion])
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timeout = window.setTimeout(() => setResendCooldown((seconds) => Math.max(0, seconds - 1)), 1_000)
+    return () => window.clearTimeout(timeout)
+  }, [resendCooldown])
 
   const openProfessor = () => {
     document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -269,7 +314,7 @@ function App() {
         window.localStorage.setItem(PENDING_PROFESSOR_QUESTION_KEY, question)
         setProfessorState({ kind: 'idle' })
         setLoginError('')
-        setLoginSent(false)
+        if (loginStep === 'success') setLoginStep('email')
         setLoginOpen(true)
         return
       }
@@ -284,7 +329,7 @@ function App() {
         window.localStorage.setItem(PENDING_PROFESSOR_QUESTION_KEY, question)
         setProfessorState({ kind: 'idle' })
         setLoginError('')
-        setLoginSent(false)
+        if (loginStep === 'success') setLoginStep('email')
         setLoginOpen(true)
       } else {
         setProfessorState(state)
@@ -293,22 +338,73 @@ function App() {
     }
   }
 
-  const sendLoginLink = async () => {
-    if (!loginEmail.trim()) {
-      setLoginError('Informe seu e-mail para receber o link de acesso.')
+  const sendOtp = async () => {
+    if (otpRequestInFlight.current) return
+    const normalizedEmail = loginEmail.trim().toLowerCase()
+    if (!normalizedEmail || !/^\S+@\S+\.\S+$/.test(normalizedEmail)) {
+      setLoginError('Informe um e-mail válido para receber o código de acesso.')
       return
     }
-    setLoginLoading(true)
+    otpRequestInFlight.current = true
+    setOtpSending(true)
     setLoginError('')
     try {
       if (query.trim()) window.localStorage.setItem(PENDING_PROFESSOR_QUESTION_KEY, query.trim())
-      await sendProfessorLoginLink(loginEmail)
-      setLoginSent(true)
-    } catch (reason) {
-      setLoginError(reason instanceof Error ? reason.message : 'Não foi possível enviar o link de acesso.')
+      await sendProfessorOtp(normalizedEmail)
+      setLoginEmail(normalizedEmail)
+      setLoginCode('')
+      setLoginStep('code')
+      setResendCooldown(60)
+    } catch {
+      setLoginError('Não foi possível enviar o código agora. Aguarde um momento e tente novamente.')
     } finally {
-      setLoginLoading(false)
+      otpRequestInFlight.current = false
+      setOtpSending(false)
     }
+  }
+
+  const verifyOtp = async () => {
+    if (otpRequestInFlight.current) return
+    if (!/^\d{6}$/.test(loginCode)) {
+      setLoginError('Digite os seis dígitos do código recebido por e-mail.')
+      return
+    }
+    otpRequestInFlight.current = true
+    setOtpVerifying(true)
+    setLoginError('')
+    try {
+      await verifyProfessorOtp(loginEmail, loginCode)
+      setLoginStep('success')
+      window.setTimeout(restorePendingQuestion, 700)
+    } catch {
+      setLoginError('Código incorreto ou expirado. Confira os seis dígitos ou solicite um novo código.')
+    } finally {
+      otpRequestInFlight.current = false
+      setOtpVerifying(false)
+    }
+  }
+
+  const resendOtp = async () => {
+    if (resendCooldown > 0 || otpRequestInFlight.current) return
+    otpRequestInFlight.current = true
+    setOtpResending(true)
+    setLoginError('')
+    try {
+      await sendProfessorOtp(loginEmail)
+      setLoginCode('')
+      setResendCooldown(60)
+    } catch {
+      setLoginError('Não foi possível reenviar o código agora. Aguarde um momento e tente novamente.')
+    } finally {
+      otpRequestInFlight.current = false
+      setOtpResending(false)
+    }
+  }
+
+  const changeLoginEmail = () => {
+    setLoginStep('email')
+    setLoginCode('')
+    setLoginError('')
   }
 
   const busy = professorState.kind === 'checking-session' || professorState.kind === 'asking'
@@ -420,7 +516,7 @@ function App() {
 
       <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJA. Não constitui recomendação de investimento.</p><div><button onClick={() => setModal('terms')}>Termos de Uso</button><button onClick={() => setModal('privacy')}>Política de Privacidade</button><span>© 2026 AçõesJA</span></div></footer>
       {modal && <Modal kind={modal} onClose={() => setModal(null)} />}
-      {loginOpen && <ProfessorLoginModal email={loginEmail} error={loginError} loading={loginLoading} sent={loginSent} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onSubmit={sendLoginLink} />}
+      {loginOpen && <ProfessorLoginModal code={loginCode} cooldown={resendCooldown} email={loginEmail} error={loginError} resending={otpResending} sending={otpSending} step={loginStep} verifying={otpVerifying} onBack={changeLoginEmail} onChangeCode={(code) => { setLoginCode(code); setLoginError('') }} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onResend={resendOtp} onSubmitEmail={sendOtp} onVerify={verifyOtp} />}
     </main>
   )
 }
