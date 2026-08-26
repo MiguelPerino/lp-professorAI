@@ -1,5 +1,6 @@
 export type LocalConversationEntry = {
   id: string
+  ticker?: string
   question: string
   answer: string
   createdAt: string
@@ -22,6 +23,7 @@ function validEntry(value: unknown): value is LocalConversationEntry {
     && entry.question.length <= MAX_QUESTION_CHARS
     && typeof entry.answer === 'string'
     && entry.answer.length <= MAX_ANSWER_CHARS
+    && (entry.ticker === undefined || typeof entry.ticker === 'string')
     && typeof entry.createdAt === 'string'
 }
 
@@ -39,10 +41,12 @@ export function appendConversation(
   userId: string,
   question: string,
   answer: string,
+  ticker?: string,
   storage: Storage = window.localStorage,
 ): LocalConversationEntry[] {
   const entry: LocalConversationEntry = {
     id: crypto.randomUUID(),
+    ticker,
     question: question.slice(0, MAX_QUESTION_CHARS),
     answer: answer.slice(0, MAX_ANSWER_CHARS),
     createdAt: new Date().toISOString(),
