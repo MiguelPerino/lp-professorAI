@@ -25,6 +25,7 @@ import { askProfessor, getProfessorUsage, getProfessorUserId, hasProfessorSessio
 import { buildProfessorMessage } from './lib/marketContext'
 import { demoAssets, getStandardAnswer, recordLpInteraction, standardAnswerPreview, standardQuestionKey, standardQuestions } from './lib/professorDemo'
 import type { DemoTicker } from './lib/professorDemo'
+import { guidedProfessorResponse } from './lib/questionScope'
 
 type ModalKind = 'checkout' | null
 const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
@@ -386,6 +387,26 @@ function App() {
         title: `${selectedTicker} · ${question.slice(0, 120)}`,
         question,
         answer: answer.answerMarkdown,
+      })
+      return
+    }
+    const guidedResponse = guidedProfessorResponse(selectedTicker, question)
+    if (guidedResponse) {
+      const conversationId = crypto.randomUUID()
+      setLiveAnswer(guidedResponse.answer)
+      setInvestigationHint(guidedResponse.hint)
+      setAnswerSource(`Professor IA · foco em ${selectedTicker}`)
+      setProfessorState({ kind: 'answered' })
+      posthog?.capture('professor_scope_redirect_served', { ticker: selectedTicker, scope: guidedResponse.scope })
+      void recordLpInteraction('scope_redirect_served', {
+        ticker: selectedTicker,
+        properties: { scope: guidedResponse.scope },
+      })
+      void recordProfessorExchange({
+        conversationId,
+        title: `${selectedTicker} · redirecionamento educacional`,
+        question,
+        answer: guidedResponse.answer,
       })
       return
     }
