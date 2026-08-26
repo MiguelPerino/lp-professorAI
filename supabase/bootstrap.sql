@@ -39,6 +39,40 @@ create table if not exists public.launch_waitlist_entries (
 create unique index if not exists launch_waitlist_entries_email_key
   on public.launch_waitlist_entries (lower(email));
 
+-- Tabelas já existentes no projeto Supabase da LP. As declarações abaixo
+-- documentam o contrato e permitem bootstrap limpo sem recriá-las no ambiente
+-- hospedado. auth.users e auth.uid() são fornecidos pelo próprio Supabase.
+create table if not exists public.professor_conversations (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  title text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists professor_conversations_user_created_idx
+  on public.professor_conversations (user_id, created_at desc);
+
+create table if not exists public.professor_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null references public.professor_conversations(id) on delete cascade,
+  role text not null,
+  content text not null,
+  provider_message_id text,
+  created_at timestamptz not null default now()
+);
+
+create index if not exists professor_messages_conversation_created_idx
+  on public.professor_messages (conversation_id, created_at);
+
+create table if not exists public.professor_daily_usage (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  usage_date date not null default current_date,
+  question_count integer not null default 0,
+  updated_at timestamptz not null default now(),
+  primary key (user_id, usage_date)
+);
+
 -- Catálogo pequeno e intencional do experimento da LP. Não representa a
 -- cobertura total de ativos da plataforma principal.
 create table if not exists public.professor_demo_assets (
@@ -143,6 +177,14 @@ create trigger profiles_set_updated_at before update on public.profiles
 
 drop trigger if exists launch_waitlist_set_updated_at on public.launch_waitlist_entries;
 create trigger launch_waitlist_set_updated_at before update on public.launch_waitlist_entries
+  for each row execute procedure public.set_updated_at();
+
+drop trigger if exists professor_conversations_set_updated_at on public.professor_conversations;
+create trigger professor_conversations_set_updated_at before update on public.professor_conversations
+  for each row execute procedure public.set_updated_at();
+
+drop trigger if exists professor_daily_usage_set_updated_at on public.professor_daily_usage;
+create trigger professor_daily_usage_set_updated_at before update on public.professor_daily_usage
   for each row execute procedure public.set_updated_at();
 
 drop trigger if exists professor_demo_assets_set_updated_at on public.professor_demo_assets;
@@ -327,8 +369,98 @@ begin
 end;
 $$;
 
+-- Persiste somente trocas de usuários autenticados. A função é idempotente por
+-- conversation_id + role, mantém as tabelas privadas e incrementa o uso apenas
+-- quando a pergunta é inserida pela primeira vez.
+create or replace function public.record_professor_exchange(
+  p_conversation_id uuid,
+  p_title text,
+  p_question text,
+  p_answer text,
+  p_provider_message_id text default null
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_user_id uuid := auth.uid();
+  v_question_inserted boolean := false;
+begin
+  if v_user_id is null then
+    raise exception 'Autenticação obrigatória' using errcode = '42501';
+  end if;
+  if p_conversation_id is null then
+    raise exception 'Conversa inválida' using errcode = '22023';
+  end if;
+  if nullif(trim(p_question), '') is null or char_length(p_question) > 280 then
+    raise exception 'Pergunta inválida' using errcode = '22023';
+  end if;
+  if nullif(trim(p_answer), '') is null or char_length(p_answer) > 12000 then
+    raise exception 'Resposta inválida' using errcode = '22023';
+  end if;
+  if nullif(trim(p_title), '') is null or char_length(p_title) > 160
+     or char_length(coalesce(p_provider_message_id, '')) > 240 then
+    raise exception 'Metadados da conversa inválidos' using errcode = '22023';
+  end if;
+
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(p_conversation_id::text, 0)
+  );
+
+  insert into public.professor_conversations (id, user_id, title)
+  values (p_conversation_id, v_user_id, nullif(trim(p_title), ''))
+  on conflict (id) do nothing;
+
+  if not exists (
+    select 1 from public.professor_conversations
+    where id = p_conversation_id and user_id = v_user_id
+  ) then
+    raise exception 'Conversa não pertence ao usuário autenticado' using errcode = '42501';
+  end if;
+
+  if not exists (
+    select 1 from public.professor_messages
+    where conversation_id = p_conversation_id and role = 'user'
+  ) then
+    insert into public.professor_messages (conversation_id, role, content)
+    values (p_conversation_id, 'user', trim(p_question));
+    v_question_inserted := true;
+  end if;
+
+  if not exists (
+    select 1 from public.professor_messages
+    where conversation_id = p_conversation_id and role = 'assistant'
+  ) then
+    insert into public.professor_messages (
+      conversation_id, role, content, provider_message_id
+    ) values (
+      p_conversation_id, 'assistant', trim(p_answer),
+      nullif(trim(p_provider_message_id), '')
+    );
+  end if;
+
+  if v_question_inserted then
+    insert into public.professor_daily_usage (
+      user_id, usage_date, question_count
+    ) values (
+      v_user_id, current_date, 1
+    )
+    on conflict (user_id, usage_date) do update set
+      question_count = public.professor_daily_usage.question_count + 1,
+      updated_at = now();
+  end if;
+
+  return v_question_inserted;
+end;
+$$;
+
 alter table public.profiles enable row level security;
 alter table public.launch_waitlist_entries enable row level security;
+alter table public.professor_conversations enable row level security;
+alter table public.professor_messages enable row level security;
+alter table public.professor_daily_usage enable row level security;
 alter table public.professor_demo_assets enable row level security;
 alter table public.professor_standard_questions enable row level security;
 alter table public.professor_standard_answers enable row level security;
@@ -341,6 +473,9 @@ create policy "profiles can view own data" on public.profiles
 drop policy if exists "profiles can update own data" on public.profiles;
 revoke insert, update, delete on table public.profiles from anon, authenticated;
 revoke all on table public.launch_waitlist_entries from anon, authenticated;
+revoke all on table public.professor_conversations from anon, authenticated;
+revoke all on table public.professor_messages from anon, authenticated;
+revoke all on table public.professor_daily_usage from anon, authenticated;
 revoke all on table public.professor_demo_assets from anon, authenticated;
 revoke all on table public.professor_standard_questions from anon, authenticated;
 revoke all on table public.professor_standard_answers from anon, authenticated;
@@ -348,5 +483,6 @@ revoke all on table public.lp_interaction_events from anon, authenticated;
 grant execute on function public.join_launch_waitlist(text, text, text, boolean, jsonb) to anon, authenticated;
 grant execute on function public.get_professor_standard_answer(text, text) to anon, authenticated;
 grant execute on function public.record_lp_interaction(uuid, text, text, text, jsonb) to anon, authenticated;
+grant execute on function public.record_professor_exchange(uuid, text, text, text, text) to authenticated;
 
 commit;

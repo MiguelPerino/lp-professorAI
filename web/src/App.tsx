@@ -21,7 +21,7 @@ import { appendConversation, clearConversation, loadConversation } from './lib/c
 import type { ProfessorUsage } from './lib/professorApi'
 import { professorErrorState } from './lib/professorState'
 import type { ProfessorState } from './lib/professorState'
-import { askProfessor, getProfessorUsage, getProfessorUserId, hasProfessorSession, initializeProfessorAuth, joinWaitlist, sendProfessorOtp, verifyProfessorOtp } from './lib/services'
+import { askProfessor, getProfessorUsage, getProfessorUserId, hasProfessorSession, initializeProfessorAuth, joinWaitlist, recordProfessorExchange, sendProfessorOtp, verifyProfessorOtp } from './lib/services'
 import { buildProfessorMessage } from './lib/marketContext'
 import { demoAssets, getStandardAnswer, recordLpInteraction, standardAnswerPreview, standardQuestionKey, standardQuestions } from './lib/professorDemo'
 import type { DemoTicker } from './lib/professorDemo'
@@ -374,12 +374,19 @@ function App() {
     if (questionKey) {
       setProfessorState({ kind: 'asking' })
       const answer = await getStandardAnswer(selectedTicker, questionKey)
+      const conversationId = crypto.randomUUID()
       setLiveAnswer(answer.answerMarkdown)
       setInvestigationHint(answer.investigationHint)
       setAnswerSource(answer.sourceLabel)
       setProfessorState({ kind: 'answered' })
       posthog?.capture('professor_standard_answer_served', { ticker: selectedTicker, question_key: questionKey })
       void recordLpInteraction('standard_answer_served', { ticker: selectedTicker, questionKey })
+      void recordProfessorExchange({
+        conversationId,
+        title: `${selectedTicker} · ${question.slice(0, 120)}`,
+        question,
+        answer: answer.answerMarkdown,
+      })
       return
     }
     if (!isProfessorEnabled) {
@@ -411,6 +418,12 @@ function App() {
         setProfessorUserId(userId)
         appendConversation(userId, question, response.message, selectedTicker)
       }
+      void recordProfessorExchange({
+        conversationId,
+        title: `${selectedTicker} · ${question.slice(0, 120)}`,
+        question,
+        answer: response.message,
+      })
       void refreshUsage()
       posthog?.capture('professor_question_answered', { conversation_id: conversationId, ticker: selectedTicker })
       void recordLpInteraction('professor_question_answered', { ticker: selectedTicker })

@@ -17,8 +17,11 @@ respostas educacionais versionadas em `professor_standard_answers`, sem consumir
 tokens do modelo. Perguntas livres exigem uma sessão Supabase. O frontend busca
 o contexto disponível nas APIs públicas de cotação e histórico e envia o access
 token somente em `Authorization` para `api.acoesja.com.br`; o backend valida a sessão, aplica
-guardrails/limites e mede tokens. A conversa fica somente no `localStorage`,
-isolada por `user.id`, e pode ser apagada na interface.
+guardrails/limites e mede tokens. O histórico de apresentação continua no
+`localStorage`, isolado por `user.id`, e pode ser apagado na interface. Quando
+o usuário está autenticado, cada troca concluída também é persistida pelas RPCs
+do Supabase em `professor_conversations` e `professor_messages`; a contagem
+diária é atualizada em `professor_daily_usage`.
 
 ## Desenvolvimento
 
@@ -68,8 +71,10 @@ GitHub Pages. Uma falha real nunca é substituída por exemplo simulado.
 
 - PETR4 e ITUB4 no catálogo reduzido da demonstração;
 - as duas perguntas padrão e quatro respostas especializadas;
+- as tabelas preexistentes de conversas, mensagens e uso diário;
 - `lp_interaction_events`, sem texto livre, resposta ou contato pessoal;
-- RPCs públicas estreitas para consultar resposta e registrar interação;
+- RPCs estreitas para consultar resposta, registrar interação e persistir
+  troca autenticada de forma idempotente;
 - nome e consentimento obrigatórios na função da lista de novidades.
 
 Os eventos permitem validar hero, escolha de ativo, pergunta padrão, expansão
