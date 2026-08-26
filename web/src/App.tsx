@@ -555,7 +555,7 @@ function App() {
         <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quer acompanhar a evolução do Professor IA e do AçõesJá?</h2></div><button className="button button-light" onClick={() => setModal('checkout')}>Quero acompanhar as novidades <ArrowRight size={18} /></button></div>
       </section>
 
-      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos">Termos de Uso</a><a href="https://www.acoesja.com.br/privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
+      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos-de-uso">Termos de Uso</a><a href="https://www.acoesja.com.br/politica-de-privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
       {modal && <Modal onClose={() => setModal(null)} />}
       {loginOpen && <ProfessorLoginModal code={loginCode} cooldown={resendCooldown} email={loginEmail} error={loginError} resending={otpResending} sending={otpSending} step={loginStep} verifying={otpVerifying} onBack={changeLoginEmail} onChangeCode={(code) => { setLoginCode(code); setLoginError('') }} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onResend={resendOtp} onSubmitEmail={sendOtp} onVerify={verifyOtp} />}
     </main>
