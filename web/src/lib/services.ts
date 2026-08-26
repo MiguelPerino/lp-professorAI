@@ -68,8 +68,19 @@ export async function verifyProfessorOtp(email: string, token: string): Promise<
   if (!data.session?.access_token) fail('O código foi aceito, mas não foi possível iniciar sua sessão.')
 }
 
-export async function joinWaitlist(input: { name: string; email: string; whatsapp: string; marketingConsent: boolean }) {
+export type WaitlistInput = { name: string; email: string; whatsapp: string; marketingConsent: boolean }
+
+export function validateWaitlistInput(input: WaitlistInput): string | null {
+  if (!input.name.trim()) return 'Informe seu nome para continuar.'
+  if (!/^\S+@\S+\.\S+$/.test(input.email.trim())) return 'Informe um e-mail válido.'
+  if (!input.marketingConsent) return 'Marque o consentimento para receber avisos e novidades.'
+  return null
+}
+
+export async function joinWaitlist(input: WaitlistInput) {
   if (!isSupabaseConfigured) fail('A lista de lançamento ainda não foi configurada.')
+  const validationError = validateWaitlistInput(input)
+  if (validationError) fail(validationError)
   const query = new URLSearchParams(window.location.search)
   const attribution = Object.fromEntries(
     ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']

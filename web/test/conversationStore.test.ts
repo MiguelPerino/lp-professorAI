@@ -15,12 +15,13 @@ class MemoryStorage implements Storage {
 test('isola e limita o histórico local por usuário Supabase', () => {
   const storage = new MemoryStorage()
   for (let index = 0; index < 22; index += 1) {
-    appendConversation('user-a', `Pergunta ${index}`, `Resposta ${index}`, storage)
+    appendConversation('user-a', `Pergunta ${index}`, `Resposta ${index}`, 'PETR4', storage)
   }
-  appendConversation('user-b', 'Outra pergunta', 'Outra resposta', storage)
+  appendConversation('user-b', 'Outra pergunta', 'Outra resposta', undefined, storage)
 
   assert.equal(loadConversation('user-a', storage).length, 20)
   assert.equal(loadConversation('user-a', storage)[0].question, 'Pergunta 2')
+  assert.equal(loadConversation('user-a', storage)[0].ticker, 'PETR4')
   assert.equal(loadConversation('user-b', storage).length, 1)
 
   clearConversation('user-a', storage)

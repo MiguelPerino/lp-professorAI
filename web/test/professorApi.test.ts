@@ -2,7 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import { ProfessorApi, ProfessorApiError } from '../src/lib/professorApi.ts'
 
-test('envia a pergunta diretamente ao backend AçõesJá com bearer Supabase', async () => {
+test('envia a pergunta diretamente ao backend AçõesJA com bearer Supabase', async () => {
   const calls: Array<{ url: string; init?: RequestInit }> = []
   const adapter = new ProfessorApi({
     baseUrl: 'https://api.example.com/api/lp/professor',
