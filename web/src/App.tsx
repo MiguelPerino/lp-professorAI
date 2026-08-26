@@ -248,6 +248,7 @@ function App() {
   const [loginOpen, setLoginOpen] = useState(false)
   const [loginConfirmed, setLoginConfirmed] = useState(false)
   const otpRequestInFlight = useRef(false)
+  const demoViewTracked = useRef(false)
   const closeLogin = useCallback(() => setLoginOpen(false), [])
 
   const restorePendingQuestion = useCallback(() => {
@@ -315,6 +316,20 @@ function App() {
   }, [])
 
   useEffect(() => {
+    const demonstration = document.getElementById('demonstracao')
+    if (!demonstration || !('IntersectionObserver' in window)) return
+    const observer = new IntersectionObserver(([entry]) => {
+      if (!entry?.isIntersecting || demoViewTracked.current) return
+      demoViewTracked.current = true
+      posthog?.capture('professor_demo_viewed', { ticker: selectedTicker })
+      void recordLpInteraction('professor_demo_viewed', { ticker: selectedTicker })
+      observer.disconnect()
+    }, { threshold: 0.35 })
+    observer.observe(demonstration)
+    return () => observer.disconnect()
+  }, [posthog, selectedTicker])
+
+  useEffect(() => {
     if (resendCooldown <= 0) return
     const timeout = window.setTimeout(() => setResendCooldown((seconds) => Math.max(0, seconds - 1)), 1_000)
     return () => window.clearTimeout(timeout)
@@ -322,7 +337,7 @@ function App() {
 
   const openProfessor = () => {
     posthog?.capture('use_professor_clicked', { ticker: selectedTicker })
-    void recordLpInteraction('hero_cta_clicked', { ticker: selectedTicker })
+    void recordLpInteraction('hero_cta_clicked', { ticker: selectedTicker, properties: { destination: 'perguntar' } })
     document.getElementById('perguntar')?.scrollIntoView({ behavior: 'smooth', block: 'center' })
     window.setTimeout(() => document.getElementById('hero-question')?.focus(), 350)
   }
@@ -514,8 +529,8 @@ function App() {
             <div><span>03</span><p><strong>Receba uma explicação</strong> baseada naquele ativo.</p></div>
           </div>
           <div className="hero-actions">
-            <a className="button button-primary" href="#demonstracao">Ver demonstração <ArrowDownRight size={18} /></a>
-            <a className="text-link" href="#como-funciona">Entenda como o Professor IA funciona <ChevronRight size={16} /></a>
+            <a className="button button-primary" href="#demonstracao" onClick={() => { posthog?.capture('hero_cta_clicked', { destination: 'demonstracao', ticker: selectedTicker }); void recordLpInteraction('hero_cta_clicked', { ticker: selectedTicker, properties: { destination: 'demonstracao' } }) }}>Ver demonstração <ArrowDownRight size={18} /></a>
+            <a className="text-link" href="#como-funciona" onClick={() => { posthog?.capture('see_how_it_works_clicked'); void recordLpInteraction('see_how_it_works_clicked', { ticker: selectedTicker }) }}>Entenda como o Professor IA funciona <ChevronRight size={16} /></a>
           </div>
           <div className="trust"><ShieldCheck size={18} /><span>Uma experiência educacional. Sem recomendações de compra ou venda.</span></div>
         </div>
