@@ -3,7 +3,11 @@ export const config = {
     import.meta.env.VITE_PROFESSOR_API_BASE?.trim()
       || 'https://api.acoesja.com.br/api/lp/professor'
   ).replace(/\/$/, ''),
-  posthogKey: import.meta.env.VITE_POSTHOG_KEY?.trim() ?? '',
+  posthogToken: (
+    import.meta.env.VITE_POSTHOG_PROJECT_TOKEN?.trim()
+      || import.meta.env.VITE_POSTHOG_KEY?.trim()
+      || ''
+  ),
   posthogHost: (import.meta.env.VITE_POSTHOG_HOST?.trim() || 'https://us.i.posthog.com').replace(/\/$/, ''),
   supabaseAnonKey:
     import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY?.trim() || import.meta.env.VITE_SUPABASE_ANON_KEY?.trim() || '',

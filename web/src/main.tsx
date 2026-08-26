@@ -1,13 +1,27 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { PostHogProvider } from '@posthog/react'
 import App from './App'
-import { track } from './lib/analytics'
+import { config } from './lib/config'
 import './styles.css'
 
-track('$pageview')
+const posthogOptions = {
+  api_host: config.posthogHost,
+  defaults: '2026-05-30',
+  autocapture: true,
+  capture_pageview: true,
+  capture_pageleave: true,
+  capture_heatmaps: true,
+  session_recording: {
+    // Perguntas, e-mails e outros campos digitados não aparecem nas gravações.
+    maskAllInputs: true,
+  },
+} as const
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <PostHogProvider apiKey={config.posthogToken} options={posthogOptions}>
+      <App />
+    </PostHogProvider>
   </StrictMode>,
 )

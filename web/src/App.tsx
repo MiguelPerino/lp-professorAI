@@ -12,9 +12,9 @@ import {
   Sparkles,
   X,
 } from 'lucide-react'
+import { usePostHog } from '@posthog/react'
 import brandLogo from '../../design/Logo preta.jpeg'
 import brandIcon from '../../design/Logo Ícone preto.png'
-import { track } from './lib/analytics'
 import { isProfessorEnabled } from './lib/config'
 import { appendConversation, clearConversation, loadConversation } from './lib/conversationStore'
 import type { ProfessorUsage } from './lib/professorApi'
@@ -91,6 +91,7 @@ function ProfessorAvatar({ small = false }: { small?: boolean }) {
 }
 
 function Modal({ onClose }: { onClose: () => void }) {
+  const posthog = usePostHog()
   const dialogRef = useRef<HTMLElement>(null)
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -128,7 +129,7 @@ function Modal({ onClose }: { onClose: () => void }) {
     setLoading(true); setError('')
     try {
       await joinWaitlist({ name, email, whatsapp, marketingConsent })
-      track('launch_list_joined', { marketing_consent: marketingConsent })
+      posthog?.capture('launch_list_joined', { marketing_consent: marketingConsent })
       setSubmitted(true)
     } catch (reason) { setError(message(reason)) } finally { setLoading(false) }
   }
@@ -230,6 +231,7 @@ function ProfessorLoginModal({ code, cooldown, email, error, resending, sending,
 }
 
 function App() {
+  const posthog = usePostHog()
   const [modal, setModal] = useState<ModalKind>(null)
   const [query, setQuery] = useState('')
   const [activeQuestion, setActiveQuestion] = useState(questions[0])
@@ -302,6 +304,10 @@ function App() {
   }, [refreshUsage, restoreLocalConversation, restorePendingQuestion])
 
   useEffect(() => {
+    if (professorUserId) posthog?.identify(professorUserId)
+  }, [posthog, professorUserId])
+
+  useEffect(() => {
     if (resendCooldown <= 0) return
     const timeout = window.setTimeout(() => setResendCooldown((seconds) => Math.max(0, seconds - 1)), 1_000)
     return () => window.clearTimeout(timeout)
@@ -322,7 +328,7 @@ function App() {
     if (!question) return
     setLoginConfirmed(false)
     setLiveAnswer('')
-    track('professor_question_started', { question_length: question.length })
+    posthog?.capture('professor_question_started', { question_length: question.length })
     if (!isProfessorEnabled) {
       setProfessorState({
         kind: 'preview-only',
@@ -351,7 +357,7 @@ function App() {
         appendConversation(userId, question, response.message)
       }
       void refreshUsage()
-      track('professor_question_answered', { conversation_id: conversationId })
+      posthog?.capture('professor_question_answered', { conversation_id: conversationId })
     } catch (reason) {
       const state = professorErrorState(reason)
       if (state.kind === 'login') {
@@ -363,7 +369,7 @@ function App() {
       } else {
         setProfessorState(state)
       }
-      track('professor_question_failed', { state: state.kind })
+      posthog?.capture('professor_question_failed', { state: state.kind })
     }
   }
 
@@ -403,6 +409,8 @@ function App() {
     setLoginError('')
     try {
       await verifyProfessorOtp(loginEmail, loginCode)
+      const userId = await getProfessorUserId()
+      if (userId) setProfessorUserId(userId)
       setLoginStep('success')
       window.setTimeout(restorePendingQuestion, 700)
     } catch {
