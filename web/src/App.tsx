@@ -553,7 +553,7 @@ function App() {
 
       <section className="hero container" id="perguntar">
         <div className="hero-copy">
-          <div className="product-label"><span className="pulse-dot" /> Entenda o que é e como funciona o Professor IA</div>
+          <div className="product-label"><span className="pulse-dot" /> Venha conhecer como funciona o Professor IA!</div>
           <p className="hero-product">Seu guia educacional dentro do AçõesJA.</p>
           <h1>Escolha uma ação. Entenda o que os <em>números dela</em> querem dizer.</h1>
           <p>Faça perguntas sobre ações, indicadores e resultados. O Professor IA transforma conceitos do mercado em explicações claras para apoiar seu aprendizado.</p>
