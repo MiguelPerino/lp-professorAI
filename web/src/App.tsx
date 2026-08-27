@@ -6,6 +6,7 @@ import {
   ChevronDown,
   ChevronRight,
   Clock3,
+  Database,
   LockKeyhole,
   Menu,
   MessageCircle,
@@ -29,6 +30,7 @@ import { guidedProfessorResponse } from './lib/questionScope'
 
 type ModalKind = 'checkout' | null
 const PENDING_PROFESSOR_QUESTION_KEY = 'acoesja:pending-professor-question'
+const DEMO_NOTICE_SEEN_KEY = 'acoesja:professor-demo-notice-seen'
 const PROFESSOR_OTP_LENGTH = 8
 const ProfessorAnswer = lazy(() => import('./components/ProfessorAnswer'))
 
@@ -77,6 +79,48 @@ function Logo() {
 
 function ProfessorAvatar({ small = false }: { small?: boolean }) {
   return <img className={small ? 'prof-avatar small' : 'prof-avatar'} src={brandIcon} alt="" />
+}
+
+function DemoNoticeModal({ onClose }: { onClose: () => void }) {
+  const dialogRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    const previousFocus = document.activeElement as HTMLElement | null
+    const dialog = dialogRef.current
+    dialog?.querySelector<HTMLElement>('button')?.focus()
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onClose()
+      if (event.key !== 'Tab' || !dialog) return
+      const focusable = [...dialog.querySelectorAll<HTMLElement>('button:not(:disabled), [href]')]
+      if (!focusable.length) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+
+    document.addEventListener('keydown', onKeyDown)
+    return () => { document.removeEventListener('keydown', onKeyDown); previousFocus?.focus() }
+  }, [onClose])
+
+  return (
+    <div className="modal-backdrop demo-notice-backdrop" role="presentation">
+      <section ref={dialogRef} className="modal demo-notice-modal" role="dialog" aria-modal="true" aria-labelledby="demo-notice-title" aria-describedby="demo-notice-description">
+        <button className="modal-close" onClick={onClose} aria-label="Fechar aviso"><X size={20} /></button>
+        <div className="demo-notice-icon" aria-hidden="true"><Database size={23} /></div>
+        <span className="eyebrow">Antes de começar</span>
+        <h2 id="demo-notice-title">Esta é uma prévia do Professor IA.</h2>
+        <p id="demo-notice-description">O Professor IA foi criado para analisar empresas com contexto, dados oficiais e informações atualizadas dentro do AçõesJA, ajudando você a entender melhor o que está por trás dos números.</p>
+        <div className="demo-notice-highlight">
+          <strong>Nesta página, você está em um ambiente de teste.</strong>
+          <span>Aqui, o Professor IA não acessa nem usa os dados reais e atualizados. A versão integrada estará no site oficial, que está próximo do lançamento.</span>
+        </div>
+        <button className="button button-primary wide" onClick={onClose}>Entendi, quero conhecer <ArrowRight size={17} /></button>
+        <small>Esta experiência tem finalidade educacional e não constitui recomendação de investimento.</small>
+      </section>
+    </div>
+  )
 }
 
 function Modal({ onClose }: { onClose: () => void }) {
@@ -225,6 +269,10 @@ function ProfessorLoginModal({ code, cooldown, email, error, resending, sending,
 function App() {
   const posthog = usePostHog()
   const [modal, setModal] = useState<ModalKind>(null)
+  const [demoNoticeOpen, setDemoNoticeOpen] = useState(() => {
+    try { return window.sessionStorage.getItem(DEMO_NOTICE_SEEN_KEY) !== 'true' }
+    catch { return true }
+  })
   const [query, setQuery] = useState('')
   const [activeQuestion, setActiveQuestion] = useState(questions[0])
   const [selectedTicker, setSelectedTicker] = useState<DemoTicker>('PETR4')
@@ -251,6 +299,10 @@ function App() {
   const otpRequestInFlight = useRef(false)
   const demoViewTracked = useRef(false)
   const closeLogin = useCallback(() => setLoginOpen(false), [])
+  const closeDemoNotice = useCallback(() => {
+    try { window.sessionStorage.setItem(DEMO_NOTICE_SEEN_KEY, 'true') } catch { /* O aviso pode reaparecer se o armazenamento estiver indisponível. */ }
+    setDemoNoticeOpen(false)
+  }, [])
 
   const restorePendingQuestion = useCallback(() => {
     const pendingQuestion = window.localStorage.getItem(PENDING_PROFESSOR_QUESTION_KEY)
@@ -655,7 +707,8 @@ function App() {
         <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quer acompanhar a evolução do Professor IA e do AçõesJA?</h2></div><button className="button button-light" onClick={() => { posthog?.capture('waitlist_opened'); void recordLpInteraction('waitlist_opened'); setModal('checkout') }}>Quero acompanhar as novidades <ArrowRight size={18} /></button></div>
       </section>
 
-      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJA. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos-de-uso">Termos de Uso</a><a href="https://www.acoesja.com.br/politica-de-privacidade">Política de Privacidade</a><span>© 2026 AçõesJA</span></div></footer>
+      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos-de-uso">Termos de Uso</a><a href="https://www.acoesja.com.br/politica-de-privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
+      {demoNoticeOpen && <DemoNoticeModal onClose={closeDemoNotice} />}
       {modal && <Modal onClose={() => setModal(null)} />}
       {loginOpen && <ProfessorLoginModal code={loginCode} cooldown={resendCooldown} email={loginEmail} error={loginError} resending={otpResending} sending={otpSending} step={loginStep} verifying={otpVerifying} onBack={changeLoginEmail} onChangeCode={(code) => { setLoginCode(code); setLoginError('') }} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onResend={resendOtp} onSubmitEmail={sendOtp} onVerify={verifyOtp} />}
     </main>
