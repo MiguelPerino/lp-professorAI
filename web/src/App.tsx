@@ -574,7 +574,7 @@ function App() {
             <span>{isProfessorEnabled ? 'Acesso por e-mail' : 'Demonstração simulada'}</span>
           </div>
           <div className="hero-professor-intro">
-            <span>Faça um teste agora mesmo!</span>
+            <span>Faça seu teste agora mesmo!</span>
             <h2>Uma resposta que ajuda você a entender.</h2>
             <p>Pergunte do seu jeito. O Professor IA explica conceitos, indicadores e resultados com linguagem clara e foco educacional.</p>
           </div>
