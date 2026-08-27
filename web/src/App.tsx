@@ -7,6 +7,8 @@ import {
   ChevronRight,
   Clock3,
   Database,
+  ExternalLink,
+  Gift,
   LockKeyhole,
   Menu,
   MessageCircle,
@@ -133,7 +135,7 @@ function Modal({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [marketingConsent, setMarketingConsent] = useState(false)
-  const details = { eyebrow: 'Professor IA', title: 'Acompanhe os próximos passos.', text: 'Entre na lista para receber novidades sobre a evolução do Professor IA e do AçõesJA.' }
+  const details = { eyebrow: 'Oferta de lançamento', title: 'Garanta sua chance de ganhar 1 mês grátis.', text: 'Os 50 primeiros ganham um mês grátis de acesso ao plano Essential do AçõesJá.' }
 
   useEffect(() => {
     const previousFocus = document.activeElement as HTMLElement | null
@@ -185,10 +187,11 @@ function Modal({ onClose }: { onClose: () => void }) {
           <label className="field-label optional" htmlFor="lead-whatsapp">WhatsApp <span>opcional</span></label>
           <input id="lead-whatsapp" type="tel" value={whatsapp} onChange={(event) => setWhatsapp(event.target.value)} placeholder="(11) 99999-9999" />
           <label className="consent"><input type="checkbox" checked={marketingConsent} onChange={(event) => { setMarketingConsent(event.target.checked); setError('') }} required /> <span>Aceito que meus dados sejam utilizados pelo AçõesJA para o envio de avisos, novidades e informações relacionadas à plataforma e ao lançamento do Professor IA. Consulte os <a href="https://www.acoesja.com.br/termos-de-uso" target="_blank" rel="noreferrer">Termos de Uso</a> e a <a href="https://www.acoesja.com.br/politica-de-privacidade" target="_blank" rel="noreferrer">Política de Privacidade</a>.</span></label>
-          <button className="button button-dark wide" type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Quero acompanhar as novidades'} <ArrowRight size={17} /></button>
+          <button className="button button-dark wide" type="submit" disabled={loading}>{loading ? 'Enviando...' : 'Quero garantir minha chance'} <ArrowRight size={17} /></button>
+          <small>Benefício concedido aos 50 primeiros, conforme a ordem de inscrição.</small>
         </form>}
         {error && <p className="form-error" role="alert">{error}</p>}
-        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>Cadastro confirmado.</h3><p>Você receberá novidades relevantes sobre o Professor IA e o AçõesJA.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
+        {submitted && <div className="submitted"><span><Check size={22} /></span><h3>Cadastro confirmado.</h3><p>Sua inscrição entrou na lista. Se estiver entre os 50 primeiros, você receberá um mês grátis do plano Essential.</p><button className="button button-dark wide" onClick={onClose}>Voltar para a página</button></div>}
       </section>
     </div>
   )
@@ -592,12 +595,13 @@ function App() {
 
   return (
     <main id="inicio">
-      <div className="notice"><span>{isProfessorEnabled ? 'Professor IA pronto para ajudar' : 'Demonstração simulada · integração indisponível'}</span><a href="#perguntar">Faça sua primeira pergunta <ArrowRight size={14} /></a></div>
+      <div className="notice"><span><Gift size={15} /> <strong>Oferta de lançamento:</strong> os 50 primeiros ganham 1 mês grátis do plano Essential</span><a href="#oferta">Quero participar <ArrowRight size={14} /></a></div>
       <header className="header container">
         <Logo />
         <nav id="primary-navigation" className={menuOpen ? 'nav open' : 'nav'} aria-label="Navegação principal">
           <a href="#como-funciona" onClick={() => setMenuOpen(false)}>Como funciona</a>
           <a href="#demonstracao" onClick={() => setMenuOpen(false)}>Ver exemplos</a>
+          <a className="nav-domain" href="https://acoesja.com.br" target="_blank" rel="noreferrer" onClick={() => setMenuOpen(false)} aria-label="Visitar acoesja.com.br (abre em uma nova aba)">acoesja.com.br <ExternalLink size={13} /></a>
           <button className="nav-cta" onClick={() => { openProfessor(); setMenuOpen(false) }}>Usar o Professor <ArrowRight size={16} /></button>
         </nav>
         <button className="menu" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} aria-controls="primary-navigation" onClick={() => setMenuOpen(!menuOpen)}><Menu size={24} /></button>
@@ -703,11 +707,11 @@ function App() {
         </div>
       </section>
 
-      <section className="launch-section">
-        <div className="container launch-content"><div><span className="eyebrow light">O próximo passo</span><h2>Quer acompanhar a evolução do Professor IA e do AçõesJA?</h2></div><button className="button button-light" onClick={() => { posthog?.capture('waitlist_opened'); void recordLpInteraction('waitlist_opened'); setModal('checkout') }}>Quero acompanhar as novidades <ArrowRight size={18} /></button></div>
+      <section className="launch-section" id="oferta">
+        <div className="container launch-content"><div><span className="eyebrow light">Oferta de lançamento · vagas limitadas</span><h2>Os 50 primeiros ganham 1 mês grátis do plano Essential.</h2><p>Entre na lista para acompanhar o lançamento do Professor IA e concorrer ao benefício conforme a ordem de inscrição.</p></div><button className="button button-light" onClick={() => { posthog?.capture('waitlist_opened'); void recordLpInteraction('waitlist_opened'); setModal('checkout') }}>Quero garantir minha chance <ArrowRight size={18} /></button></div>
       </section>
 
-      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a href="https://www.acoesja.com.br/termos-de-uso">Termos de Uso</a><a href="https://www.acoesja.com.br/politica-de-privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
+      <footer className="footer container"><Logo /><p>Professor IA é a experiência educacional do ecossistema AçõesJá. Não constitui recomendação de investimento.</p><div><a className="footer-domain" href="https://acoesja.com.br" target="_blank" rel="noreferrer">acoesja.com.br <ExternalLink size={11} /></a><a href="https://www.acoesja.com.br/termos-de-uso">Termos de Uso</a><a href="https://www.acoesja.com.br/politica-de-privacidade">Política de Privacidade</a><span>© 2026 AçõesJá</span></div></footer>
       {demoNoticeOpen && <DemoNoticeModal onClose={closeDemoNotice} />}
       {modal && <Modal onClose={() => setModal(null)} />}
       {loginOpen && <ProfessorLoginModal code={loginCode} cooldown={resendCooldown} email={loginEmail} error={loginError} resending={otpResending} sending={otpSending} step={loginStep} verifying={otpVerifying} onBack={changeLoginEmail} onChangeCode={(code) => { setLoginCode(code); setLoginError('') }} onChangeEmail={(email) => { setLoginEmail(email); setLoginError('') }} onClose={closeLogin} onResend={resendOtp} onSubmitEmail={sendOtp} onVerify={verifyOtp} />}
