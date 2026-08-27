@@ -571,7 +571,7 @@ function App() {
         <div className="hero-professor-panel" aria-label="Teste o Professor IA">
           <div className="hero-professor-head">
             <div><ProfessorAvatar /><div><strong>Professor IA</strong><small>{isProfessorEnabled && <i />} {isProfessorEnabled ? 'pronto para te ajudar' : 'integração indisponível'}</small></div></div>
-            <span>{isProfessorEnabled ? 'Acesso por e-mail' : 'Demonstração simulada'}</span>
+            <span>{isProfessorEnabled ? 'Teste demonstrativo' : 'Demonstração simulada'}</span>
           </div>
           <div className="hero-professor-intro">
             <span>Faça seu teste agora mesmo!</span>
