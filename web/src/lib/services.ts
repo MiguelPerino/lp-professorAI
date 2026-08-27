@@ -68,8 +68,19 @@ export async function verifyProfessorOtp(email: string, token: string): Promise<
   if (!data.session?.access_token) fail('O código foi aceito, mas não foi possível iniciar sua sessão.')
 }
 
-export async function joinWaitlist(input: { name: string; email: string; whatsapp: string; marketingConsent: boolean }) {
+export type WaitlistInput = { name: string; email: string; whatsapp: string; marketingConsent: boolean }
+
+export function validateWaitlistInput(input: WaitlistInput): string | null {
+  if (!input.name.trim()) return 'Informe seu nome para continuar.'
+  if (!/^\S+@\S+\.\S+$/.test(input.email.trim())) return 'Informe um e-mail válido.'
+  if (!input.marketingConsent) return 'Marque o consentimento para receber avisos e novidades.'
+  return null
+}
+
+export async function joinWaitlist(input: WaitlistInput) {
   if (!isSupabaseConfigured) fail('A lista de lançamento ainda não foi configurada.')
+  const validationError = validateWaitlistInput(input)
+  if (validationError) fail(validationError)
   const query = new URLSearchParams(window.location.search)
   const attribution = Object.fromEntries(
     ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term']
@@ -88,6 +99,31 @@ export async function joinWaitlist(input: { name: string; email: string; whatsap
     }),
   })
   if (!response.ok) fail(await errorMessage(response, 'Não foi possível cadastrar seu e-mail.'))
+}
+
+export async function recordProfessorExchange(input: {
+  conversationId: string
+  title: string
+  question: string
+  answer: string
+  providerMessageId?: string
+}): Promise<boolean> {
+  if (!isSupabaseConfigured) return false
+  try {
+    const client = getSupabase()
+    const { data: sessionData, error: sessionError } = await client.auth.getSession()
+    if (sessionError || !sessionData.session?.access_token) return false
+    const { data, error } = await client.rpc('record_professor_exchange', {
+      p_conversation_id: input.conversationId,
+      p_title: input.title,
+      p_question: input.question,
+      p_answer: input.answer,
+      p_provider_message_id: input.providerMessageId ?? null,
+    })
+    return !error && data === true
+  } catch {
+    return false
+  }
 }
 
 export async function askProfessor(request: ProfessorChatRequest): Promise<ProfessorChatResponse> {

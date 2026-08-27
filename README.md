@@ -1,21 +1,27 @@
-# AçõesJá — Professor IA
+# AçõesJA — Professor IA
 
 Landing page React/Vite desacoplada, com autenticação Supabase por código OTP e
-chamada bearer direta ao backend AçõesJá.
+chamada bearer direta ao backend AçõesJA.
 
 ## Estrutura
 
 ```text
 web/       landing page, login Supabase, API direta e histórico local
-supabase/  bootstrap da lista de lançamento; Auth é gerenciado pelo Supabase
+supabase/  bootstrap da lista, cache educacional e eventos; Auth é gerenciado pelo Supabase
 server/    stub 410 temporário para o projeto Vercel antigo
 design/    ativos e referências da marca
 ```
 
-O chat exige uma sessão Supabase. O frontend envia o access token somente em
-`Authorization` para `api.acoesja.com.br`; o backend valida a sessão, aplica
-guardrails/limites e mede tokens. A conversa fica somente no `localStorage`,
-isolada por `user.id`, e pode ser apagada na interface.
+As quatro combinações entre PETR4/ITUB4 e as duas perguntas padrão usam
+respostas educacionais versionadas em `professor_standard_answers`, sem consumir
+tokens do modelo. Perguntas livres exigem uma sessão Supabase. O frontend busca
+o contexto disponível nas APIs públicas de cotação e histórico e envia o access
+token somente em `Authorization` para `api.acoesja.com.br`; o backend valida a sessão, aplica
+guardrails/limites e mede tokens. O histórico de apresentação continua no
+`localStorage`, isolado por `user.id`, e pode ser apagado na interface. Quando
+o usuário está autenticado, cada troca concluída também é persistida pelas RPCs
+do Supabase em `professor_conversations` e `professor_messages`; a contagem
+diária é atualizada em `professor_daily_usage`.
 
 ## Desenvolvimento
 
@@ -42,7 +48,7 @@ O frontend usa `VITE_PROFESSOR_API_BASE` e chama diretamente:
 - `GET /usage/current-cycle` para exibir perguntas usadas no dia.
 
 Ambas usam `credentials: "omit"` e bearer Supabase. Não existem cookies ou CSRF
-do AçõesJá, BFF próprio, service role no navegador ou persistência remota das
+do AçõesJA, BFF próprio, service role no navegador ou persistência remota das
 conversas.
 
 O login envia um OTP de oito dígitos pelo Supabase e valida o código com
@@ -56,8 +62,25 @@ Link e deixa a interface de código incoerente. A geração, expiração e valid
 do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas
 um cooldown visual de 60 segundos para reenvio.
 
-O backend AçõesJá mantém allowlist CORS exata para o domínio alvo, Vercel e
+O backend AçõesJA mantém allowlist CORS exata para o domínio alvo, Vercel e
 GitHub Pages. Uma falha real nunca é substituída por exemplo simulado.
+
+## Dados e validação da LP
+
+`supabase/bootstrap.sql` é idempotente e prepara:
+
+- PETR4 e ITUB4 no catálogo reduzido da demonstração;
+- as duas perguntas padrão e quatro respostas especializadas;
+- as tabelas preexistentes de conversas, mensagens e uso diário;
+- `lp_interaction_events`, sem texto livre, resposta ou contato pessoal;
+- RPCs estreitas para consultar resposta, registrar interação e persistir
+  troca autenticada de forma idempotente;
+- nome e consentimento obrigatórios na função da lista de novidades.
+
+Os eventos permitem validar hero, escolha de ativo, pergunta padrão, expansão
+da resposta e conversão da lista. O PostHog continua recebendo os eventos de
+produto existentes; campos digitados permanecem mascarados e não entram na
+tabela de interações.
 
 ## GitHub Pages
 
@@ -75,6 +98,6 @@ Variáveis `VITE_*` são públicas. A LP precisa somente de:
 - PostHog opcional.
 
 Nunca adicione `SUPABASE_SECRET_KEY`, service role, chave do LLM ou outro
-segredo ao projeto ou bundle. O antigo projeto Vercel `server` não participa da
-integração e responde somente `410 Gone`. Ele pode ser desconectado/arquivado
-depois de confirmar o novo deploy; então a pasta stub também poderá ser removida.
+segredo ao projeto ou bundle. O antigo projeto Vercel `server` foi retirado da
+operação e não participa da integração. A pasta versionada preserva somente o
+stub `410 Gone`, sem secrets ou lógica ativa.
