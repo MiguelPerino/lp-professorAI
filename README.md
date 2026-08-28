@@ -62,8 +62,9 @@ Link e deixa a interface de código incoerente. A geração, expiração e valid
 do código permanecem sob responsabilidade do Supabase; o frontend aplica apenas
 um cooldown visual de 60 segundos para reenvio.
 
-O backend AçõesJA mantém allowlist CORS exata para o domínio alvo, Vercel e
-GitHub Pages. Uma falha real nunca é substituída por exemplo simulado.
+O backend AçõesJA mantém allowlist CORS exata para o domínio alvo e a Vercel.
+O canal GitHub Pages foi aposentado em 28/08/2026. Uma falha real nunca é
+substituída por exemplo simulado.
 
 ## Dados e validação da LP
 
@@ -82,11 +83,11 @@ da resposta e conversão da lista. O PostHog continua recebendo os eventos de
 produto existentes; campos digitados permanecem mascarados e não entram na
 tabela de interações.
 
-## GitHub Pages
+## Publicação
 
-O workflow pode executar o fluxo real quando as duas variáveis públicas do
-Supabase estiverem configuradas no repositório. Os exemplos visuais continuam
-explicitamente rotulados como demonstração simulada.
+A LP é publicada pela Vercel. Não há segundo canal ativo no GitHub Pages; isso
+evita configuração divergente, workflow vermelho e duas URLs públicas com
+comportamentos diferentes.
 
 ## Segurança
 
