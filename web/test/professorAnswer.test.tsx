@@ -15,6 +15,18 @@ test('renderiza a resposta Markdown sem expor a sintaxe ao usuário', () => {
   assert.doesNotMatch(html, /\*\*/)
 })
 
+test('normaliza quebras de linha literais antes de renderizar a resposta', () => {
+  const html = renderToStaticMarkup(
+    <ProfessorAnswer>{'Primeiro parágrafo.\\n\\nSegundo parágrafo:\\n\\n- item um\\n- item dois'}</ProfessorAnswer>,
+  )
+
+  assert.match(html, /<p>Primeiro parágrafo.<\/p>/)
+  assert.match(html, /<p>Segundo parágrafo:<\/p>/)
+  assert.match(html, /<li>item um<\/li>/)
+  assert.match(html, /<li>item dois<\/li>/)
+  assert.doesNotMatch(html, /\\n/)
+})
+
 test('não interpreta HTML bruto devolvido pelo modelo', () => {
   const html = renderToStaticMarkup(<ProfessorAnswer>{'<script>alert(1)</script>'}</ProfessorAnswer>)
 
